@@ -1,6 +1,6 @@
 """ Representa ejemplares para el algoritmo de optimización """
 
-class temporadaNFL:
+class TemporadaNFL:
   """ Describe los datos de una temporada de la NFL """
 
   # Para optimizar la velocidad de acceso a los atributos
@@ -49,7 +49,7 @@ class temporadaNFL:
     self.bye = len(partidos)
 
   @classmethod
-  def leer_archivo(cls, archivo: "Path") -> "temporadaNFL":
+  def leer_archivo(cls, archivo: "Path") -> "TemporadaNFL":
     """ Construye una clase desde el archivo txt
 
     Parámetros
@@ -59,7 +59,7 @@ class temporadaNFL:
 
     Devuelve
     --------
-    temporadaNFL : Objeto con los datos de la temporada leidos
+    TemporadaNFL : Objeto con los datos de la temporada leidos
     """
     # TODO: Terminar esto
     # NOTAS IMPORTANTES:
@@ -82,7 +82,7 @@ class temporadaNFL:
 
     # Semanas con horarios no predefinidos
     if semana in self.semanas_sin_horario:
-      return None
+      return []
 
     # No hay TNF, pero hay 3 de TDAY
     if semana == self.thanksgiving:
@@ -101,4 +101,23 @@ class temporadaNFL:
         horarios = ["TNF"] + ["XMAS"]*3
 
     return horarios
+
+  def equipo_contra(self, equipo: int, partido: int) -> int:
+    """ Devuelve el equipo contrario de un partido
+
+    Parámetro
+    ---------
+    equipo : int
+      Equipo del que se busca su oponente
+    partido : int
+      Partido a revisar, EQUIPO debe de ser uno de que lo juegan
+
+    Devuelve
+    --------
+    int : Equipo contra el que juega EQUIPO en PARTIDO
+    """
+    if partido == self.bye: return None
+    local = self.partidos[partido]["local"]
+    visitante = self.partidos[partido]["visitante"]
+    return local if local != equipo else visitante
 

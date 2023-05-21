@@ -61,10 +61,6 @@ class TemporadaNFL:
     --------
     TemporadaNFL : Objeto con los datos de la temporada leidos
     """
-    # TODO: Terminar esto
-    # NOTAS IMPORTANTES:
-    # Las listas de partidos por equipo deben de ser tuplas o van a dar problemas
-    #return None  return cls(los parametros en orden)
     with open(archivo) as data:
       info = data.readlines()
     i, p = get_partidos(info,0)
@@ -76,7 +72,9 @@ class TemporadaNFL:
     equipos = tuple(q)
     thanksgiving = int(s[0])
     navidad = (s[1], s[2])
-    return [partidos, estadios, equipos, thanksgiving, navidad]
+    # return [partidos, estadios, equipos, thanksgiving, navidad]
+    num_semanas = 18
+    return cls(num_semana, equipos, partidos, estadios, navidad, thanksgiving)
   
   def get_partidos(info, indice):
     p = []

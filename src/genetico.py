@@ -4,7 +4,7 @@ import numpy as np
 import time
 from tqdm.auto import tqdm
 from temporada import TemporadaNFL
-from evaluacion import TvaluacionNFL
+from evaluacion import EvaluacionNFL
 
 class AlgoritmoGenetico:
   """ Algoritmo Genético para las N-Reinas """
@@ -76,28 +76,33 @@ class AlgoritmoGenetico:
     # Reparamos filas
     self.repara_filas(sol)
 
+    lista_horarios = []
     # Rellenamos columnas
     for semana in range(self.ejemplar.num_semanas):
       # Horarios esterales de la semana aleatorios
       horarios = self.ejemplar.horarios_semana(semana)
       rng.shuffle(horarios)
-      # Obtenemos partidos y sus índices
-      partidos, inv = np.unique(sol[:,semana,1], return_inverse=True)
-      # Es el contador con el índice para repartir horarios a bye
-      ind_bye = len(partidos)
-      if partidos[-1] == self.ejemplar.bye: ind_bye-=1
+      lista_horarios.append(horarios)
 
-      # Repartimos equipo por equipo
-      for equipo,ind in enumerate(inv):
-        partido = sol[equipo,semana,0]
-        # Cuando es bye y |horarios| > |partidos|
-        if partido == self.ejemplar.bye and ind_bye < len(horarios):
-          sol[equipo,semana,1] = horarios[ind_bye]
-          ind_bye += 1
-        # Cuando |horarios| <= |partidos| siempre entra aqui
-        elif ind < len(horarios):
-          sol[equipo,semana,1] = horarios[ind]
-        # Cuando |horarios| < |partidos| algunos partidos se quedan en 0
+    self.agrega_horarios(0, sol.shape[1], sol, lista_horarios)
+
+      # # Obtenemos partidos y sus índices
+      # partidos, inv = np.unique(sol[:,semana,0], return_inverse=True)
+      # # Es el contador con el índice para repartir horarios a bye
+      # ind_bye = len(partidos)
+      # if partidos[-1] == self.ejemplar.bye: ind_bye-=1
+
+      # # Repartimos equipo por equipo
+      # for equipo,ind in enumerate(inv):
+      #   partido = sol[equipo,semana,0]
+      #   # Cuando es bye y |horarios| > |partidos|
+      #   if partido == self.ejemplar.bye and ind_bye < len(horarios):
+      #     sol[equipo,semana,1] = horarios[ind_bye]
+      #     ind_bye += 1
+      #   # Cuando |horarios| <= |partidos| siempre entra aqui
+      #   elif ind < len(horarios):
+      #     sol[equipo,semana,1] = horarios[ind]
+      #   # Cuando |horarios| < |partidos| algunos partidos se quedan en 0
 
     return {
       "solucion" : sol,
@@ -126,7 +131,7 @@ class AlgoritmoGenetico:
         orden_partidos[equipo][partido] = semana
 
     for i in range(solucion.shape[0]):
-      equipo = (i+fila) % solucion.shape[0]
+      equipo = (i+inicio) % solucion.shape[0]
       for semana,partido in enumerate(solucion[equipo,:,0]):
         # Encontramos al equipo contra el que juega
         contra = self.ejemplar.equipo_contra(equipo, partido)
@@ -170,9 +175,11 @@ class AlgoritmoGenetico:
     #       if p == partido: break # No alteramos la fila que estamos moviendo
     #       # assert p != partido, "No debería de tocarse esa fila nunca" # Debug
 
-  def repara_cols(self, inicio: int, fin: int, hijo: np.ndarray,
-      padre: np.ndarray) -> None:
+  def agrega_horarios(self, inicio: int, fin: int, solucion: np.ndarray,
+      horarios: list) -> None:
     """ Repara las columnas de una solución para que vuelva a ser fatible 
+
+    TODO: Cambiar esto
 
     Se asegura de que cada partido tenga el mismo horario asignado en ambas
     apariciones por semana en el intervalo de semanas [inicio,fin) de la
@@ -187,32 +194,50 @@ class AlgoritmoGenetico:
     Parámetros
     ----------
     inicio : int
-      Inicio del rango de semanas a reparar
+      Inicio del rango de semanas a alterar
     fin : int
-      fin del rango de semanas a reparar
-    hijo : np.ndarray
-      Solución hija a reparar
-    padre : np.ndarray
-      Padre del que se heredó la sección de horarios
+      fin del rango de semanas a alterar
+    solucion : np.ndarray
+      Solución a la que se le agregarán los horarios
+    horarios : lista
+      Lista de los horarios por semana. Deben de haber inicio - fin horarios
     """
-    # p = padre.copy()
-    for semana in range(inicio, fin):
-      for equipo,partido in enumerate(sol1[:,semana,0]):
-        if partido == self.ejemplar.bye: continue
-        # Encontramos contra quien juega
-        contra = self.ejemplar.equipo_contra(equipo, partido)
-        # Si es BYE no hacemos nada
-        if contra is None: continue
-        # Si los horarios están bien, no hacemos nada
-        if solucion[contra,semana,1] == solucion[equipo,semana,1]: continue
-        # Sino, intercambiamos el horario mal con el correcto
-        partido_colision = padre[equipo,semana,0]
-        equipo_colision = self.ejemplar.equipo_contra(equipo, partido_colision)
-        solucion[contra,semana,1], solucion[equipo_colision,semana,1] = \
-          solucion[equipo_colision,semana,1], solucion[contra,semana,1]
-        # Actualizamos los indices
-        # p[contra,semana,1], p[equipo_colision,semana,1] = \
-        #   p[equipo_colision,semana,1], p[contra,semana,1]
+    for h,semana in zip(range(inicio,fin),horarios):
+      # Obtenemos los partidos y sus índices para reconstruirlos
+      partidos, inv = np.unique(solucion[:,semana,0], return_inverse=True)
+      ind_bye = len(partidos) # Índice para repartir horarios bye
+      if partidos[-1] == self.ejemplar.bye: ind_bye-=1
+
+      # Repartimos equipo por equipo
+      for equipo,ind in enumerate(inv):
+        partido = solucion[equipo,semana,0]
+        # Cuando es bye y |h| > |partidos|
+        if partido == self.ejemplar.bye and ind_bye < len(h):
+          sol[equipo,semana,1] = h[ind_bye]
+          ind_bye += 1
+        # Cuando |h| <= |partidos| siempre entra aqui
+        elif ind < len(h):
+          solucion[equipo,semana,1] = h[ind]
+        # Cuando |h| < |partidos| algunos partidos se quedan en 0
+
+    # # p = padre.copy()
+    # for semana in range(inicio, fin):
+    #   for equipo,partido in enumerate(hijo[:,semana,0]):
+    #     if partido == self.ejemplar.bye: continue
+    #     # Encontramos contra quien juega
+    #     contra = self.ejemplar.equipo_contra(equipo, partido)
+    #     # Si es BYE no hacemos nada
+    #     if contra is None: continue
+    #     # Si los horarios están bien, no hacemos nada
+    #     if hijo[contra,semana,1] == hijo[equipo,semana,1]: continue
+    #     # Sino, intercambiamos el horario mal con el correcto
+    #     partido_colision = padre[equipo,semana,0]
+    #     equipo_colision = self.ejemplar.equipo_contra(equipo, partido_colision)
+    #     hijo[contra,semana,1], hijo[equipo_colision,semana,1] = \
+    #       hijo[equipo_colision,semana,1], hijo[contra,semana,1]
+    #     # Actualizamos los indices
+    #     # p[contra,semana,1], p[equipo_colision,semana,1] = \
+    #     #   p[equipo_colision,semana,1], p[contra,semana,1]
 
   def cruza_filas(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
     """ Aplica cruza por filas entre los padres
@@ -281,20 +306,25 @@ class AlgoritmoGenetico:
     --------
     tuple : Tupla con los dos hijos generados
     """
-    hijo1 = np.zeros(sol1.shape)
-    hijo2 = np.zeros(sol2.shape)
+    hijo1 = sol1.copy()
+    hijo2 = sol2.copy()
 
-    # La dimensión de partidos es igual
-    hijo1[:,:,0] = sol1[:,:,0]
-    hijo2[:,:,0] = sol2[:,:,0]
-
-    # Copiamos las mitades de los horarios
+    # Punto de cruce
     cruce = rng.integers(sol1.shape[0])
-    hijo1[:,cruce:,1] = sol2[:,cruce:,1]
-    hijo2[:,:cruce,1] = sol1[:,:cruce,1]
 
-    self.repara_cols(0, cruce, hijo2, sol1)
-    self.repara_cols(cruce, hijo1.shape[1], hijo1, sol2)
+    # Rellenamos horarios por orden relativo
+    datos_horarios = (sol2,hijo1,cruce,sol2.shape[1]), (sol1,hijo2,0,cruce)
+
+    for padre,hijo,inicio,fin in datos_horarios:
+      lista_horarios = []
+      for semana in range(inicio,fin):
+        # Obtenemos los horarios por orden de aparición
+        _, ind = np.unique(padre[:,semana,1], return_indexes=True)
+        # Quitamos el primer índice porque seguro es NONE (0)
+        horarios = padre[np.sort(ind[1:]),semana,1][1:]
+        lista_horarios.append(horarios)
+      # Cruzamos con el hijo
+      self.agrega_horarios(inicio, fin, hijo, lista_horarios)
 
     return hijo1, hijo2
 
@@ -365,7 +395,7 @@ class AlgoritmoGenetico:
     padres_ind = set()
     
     while len(padres_ind) < num_padres:
-      val = random.random()
+      val = rng.random()
       ind = np.searchsorted(self.cdf, val)
       padres_ind.add(ind)
 
@@ -386,7 +416,7 @@ class AlgoritmoGenetico:
     nueva_poblacion.append(self.mejor)
     while len(nueva_poblacion) < self.tam_poblacion:
       # Generan hijos por cruza
-      h1, h2 = *self.selecciona_padres(2)
+      h1, h2 = self.selecciona_padres(2)
       
       # Cruza
       if rng.random() < self.p_mutacion:
@@ -398,11 +428,11 @@ class AlgoritmoGenetico:
       # Mutación
       if rng.random() < self.p_cruza:
         if rng.random() < self.p_muta_filas:
-          h1 = self.muta_filas(h1)
-          h2 = self.muta_filas(h2)
+          self.muta_filas(h1)
+          self.muta_filas(h2)
         else:
-          h1 = self.muta_cols(h1)
-          h2 = self.muta_cols(h2)
+          self.muta_cols(h1)
+          self.muta_cols(h2)
 
       # Agregar
       nueva_poblacion.append({

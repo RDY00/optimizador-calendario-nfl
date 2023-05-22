@@ -94,7 +94,6 @@ class TemporadaNFL:
     
     for i in range(indice, len(info), 2):
       if(info[i] == "\n"):
-        indice = i + 1
         break
       s = info[i].split()
       lista = list(map(int, info[i+1].split()))
@@ -109,7 +108,7 @@ class TemporadaNFL:
       }
       q.append(equipo)
     
-    s = info[i].split()
+    s = info[i+1].split()
     partidos = tuple(p)
     estadios = tuple(e)
     equipos = tuple(q)
@@ -117,7 +116,7 @@ class TemporadaNFL:
     navidad = (int(s[1]), s[2])
     # return [partidos, estadios, equipos, thanksgiving, navidad]
     num_semanas = 18
-    return cls(num_semana, equipos, partidos, estadios, navidad, thanksgiving)
+    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving)
   
   def get_partidos(info, indice):
     p = []

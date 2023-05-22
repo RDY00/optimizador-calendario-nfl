@@ -177,19 +177,16 @@ class AlgoritmoGenetico:
 
   def agrega_horarios(self, inicio: int, fin: int, solucion: np.ndarray,
       horarios: list) -> None:
-    """ Repara las columnas de una solución para que vuelva a ser fatible 
-
-    TODO: Cambiar esto
+    """ Asigna los horarios dados a las columnas de la solucion en orden
 
     Se asegura de que cada partido tenga el mismo horario asignado en ambas
     apariciones por semana en el intervalo de semanas [inicio,fin) de la
-    solucion.
+    solución.
 
-    Como esta función está pensada para reparar la cruza entre columnas,
-    recibe al padre del que se heredo la sección de horarios para recuperar el
-    orden original de los partidos de esa semana.
-
-    El hijo se cambia directamente.
+    Para cada semana en [inicio,fin) se asignan los horarios a los
+    partidos en su orden a aparicición para mantener un orden relativo.
+        
+    La solución se altera directamente.
     
     Parámetros
     ----------
@@ -200,11 +197,13 @@ class AlgoritmoGenetico:
     solucion : np.ndarray
       Solución a la que se le agregarán los horarios
     horarios : lista
-      Lista de los horarios por semana. Deben de haber inicio - fin horarios
+      Lista de los horarios por semana. Debe de haber inicio - fin horarios
     """
     for h,semana in zip(range(inicio,fin),horarios):
       # Obtenemos los partidos y sus índices para reconstruirlos
-      partidos, inv = np.unique(solucion[:,semana,0], return_inverse=True)
+      # Los partidos deben de estar en orden de aparición
+      partidos, idx, inv = np.unique(solucion[:,semana,0], return_index=True, return_inverse=True)
+      partidos_map = np.sort(idx)
       ind_bye = len(partidos) # Índice para repartir horarios bye
       if partidos[-1] == self.ejemplar.bye: ind_bye-=1
 
@@ -213,11 +212,11 @@ class AlgoritmoGenetico:
         partido = solucion[equipo,semana,0]
         # Cuando es bye y |h| > |partidos|
         if partido == self.ejemplar.bye and ind_bye < len(h):
-          sol[equipo,semana,1] = h[ind_bye]
+          sol[equipo,semana,1] = h[partidos_map[ind_bye]]
           ind_bye += 1
         # Cuando |h| <= |partidos| siempre entra aqui
         elif ind < len(h):
-          solucion[equipo,semana,1] = h[ind]
+          solucion[equipo,semana,1] = h[partidos_map[ind]]
         # Cuando |h| < |partidos| algunos partidos se quedan en 0
 
     # # p = padre.copy()
@@ -319,7 +318,7 @@ class AlgoritmoGenetico:
       lista_horarios = []
       for semana in range(inicio,fin):
         # Obtenemos los horarios por orden de aparición
-        _, ind = np.unique(padre[:,semana,1], return_indexes=True)
+        _, ind = np.unique(padre[:,semana,1], return_index=True)
         # Quitamos el primer índice porque seguro es NONE (0)
         horarios = padre[np.sort(ind[1:]),semana,1][1:]
         lista_horarios.append(horarios)

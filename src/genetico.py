@@ -4,13 +4,13 @@ import numpy as np
 import time
 from tqdm.auto import tqdm
 from temporada import TemporadaNFL
-from evaluacion import EvaluacionNFL
+from evaluacion.base import EvaluacionNFL
 
 class AlgoritmoGenetico:
   """ Algoritmo Genético para las N-Reinas """
 
   # Optimizar accesos
-  __slots__ = ("ejemplar", "evalua_solucion", "p_cruza" "p_mutacion",
+  __slots__ = ("ejemplar", "evalua_solucion", "p_cruza", "p_mutacion",
                "p_cruza_filas", "p_muta_filas", "poblacion",
                "tam_poblacion", "mejor", "total_eval", "cdf", "semilla", "rng")
 
@@ -69,9 +69,11 @@ class AlgoritmoGenetico:
     # Rellenamos filas aleatoriamente
     for i in range(self.ejemplar.num_equipos):
       partidos = np.array(
-        self.ejemplar.equipos["partidos"] + [self.ejemplar.bye])
-      rng.shuffle(partidos)
+        self.ejemplar.equipos[i]["partidos"] + [self.ejemplar.bye])
+      self.rng.shuffle(partidos)
       sol[i,:,0] = partidos
+
+    return sol
 
     # Reparamos filas
     self.repara_filas(sol)
@@ -81,7 +83,7 @@ class AlgoritmoGenetico:
     for semana in range(self.ejemplar.num_semanas):
       # Horarios esterales de la semana aleatorios
       horarios = self.ejemplar.horarios_semana(semana)
-      rng.shuffle(horarios)
+      self.rng.shuffle(horarios)
       lista_horarios.append(horarios)
 
     self.agrega_horarios(0, sol.shape[1], sol, lista_horarios)
@@ -126,7 +128,7 @@ class AlgoritmoGenetico:
     # Diccionario con el orden de los partidos para tener búsqueda de O(1)
     orden_partidos = [{} for i in range(self.ejemplar.num_equipos)]
 
-    for equipo,juegos in enumerate(solucion):
+    for equipo,juegos in enumerate(solucion[:,:,0]):
       for semana,partido in enumerate(juegos):
         orden_partidos[equipo][partido] = semana
 
@@ -141,7 +143,12 @@ class AlgoritmoGenetico:
         if solucion[contra,semana,0] == partido: continue
         # Sino, intercambiamos el partido de colisión con el que va
         partido_colision = solucion[contra,semana,0]
-        ind_partido = orden_partidos[contra][partido]
+        try:
+            ind_partido = orden_partidos[contra][partido]
+        except:
+            print(contra, partido, orden_partidos[contra])
+            return
+
         solucion[contra,semana,0], solucion[contra,ind_partido,0] = \
           solucion[contra,ind_partido,0], solucion[contra,semana,0]
         # Actualizamos el diccionario de índices
@@ -309,7 +316,7 @@ class AlgoritmoGenetico:
     hijo2 = sol2.copy()
 
     # Punto de cruce
-    cruce = rng.integers(sol1.shape[0])
+    cruce = self.rng.integers(sol1.shape[0])
 
     # Rellenamos horarios por orden relativo
     datos_horarios = (sol2,hijo1,cruce,sol2.shape[1]), (sol1,hijo2,0,cruce)
@@ -394,7 +401,7 @@ class AlgoritmoGenetico:
     padres_ind = set()
     
     while len(padres_ind) < num_padres:
-      val = rng.random()
+      val = self.rng.random()
       ind = np.searchsorted(self.cdf, val)
       padres_ind.add(ind)
 
@@ -418,15 +425,15 @@ class AlgoritmoGenetico:
       h1, h2 = self.selecciona_padres(2)
       
       # Cruza
-      if rng.random() < self.p_mutacion:
-        if rng.random() < self.p_cruza_filas:
+      if self.rng.random() < self.p_mutacion:
+        if self.rng.random() < self.p_cruza_filas:
           h1, h2 = self.cruza_filas(h1,h2)
         else:
           h1, h2 = self.cruza_cols(h1,h2)
 
       # Mutación
-      if rng.random() < self.p_cruza:
-        if rng.random() < self.p_muta_filas:
+      if self.rng.random() < self.p_cruza:
+        if self.rng.random() < self.p_muta_filas:
           self.muta_filas(h1)
           self.muta_filas(h2)
         else:

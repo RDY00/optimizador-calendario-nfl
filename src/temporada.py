@@ -96,13 +96,13 @@ class TemporadaNFL:
       if(info[i] == "\n"):
         break
       s = info[i].split()
-      lista = list(map(int, info[i+1].split()))
+      #lista = list(map(int, info[i+1].split()))
       equipo = {
         # "id" : int(s[0]),
         "acronimo" : s[1],
         "conferencia" : s[2],
         "division" : s[3],
-        "bye_pasado" : s[4],
+        "bye_anterior" : s[4],
         "3_consecutivos" : s[5],
         "partidos" : lista
       }
@@ -114,8 +114,9 @@ class TemporadaNFL:
     equipos = tuple(q)
     thanksgiving = int(s[0])
     navidad = (int(s[1]), s[2])
+    max_interes = int(s[3])
     num_semanas = 18
-    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving)
+    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving, max_interes)
   
   def horarios_semana(self, semana: int) -> list:
     """ Devuelve la lista de horarios codificados de la semana

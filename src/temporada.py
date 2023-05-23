@@ -96,7 +96,7 @@ class TemporadaNFL:
       if(info[i] == "\n"):
         break
       s = info[i].split()
-      lista = list(map(int, info[i+1].split()))
+      #lista = list(map(int, info[i+1].split()))
       equipo = {
         "id" : int(s[0]),
         "nombre" : s[1],
@@ -104,7 +104,7 @@ class TemporadaNFL:
         "division" : s[3],
         "bye_pasado" : s[4],
         "3_consecutivos" : s[5],
-        "oponentes" : lista
+        #"oponentes" : lista
       }
       q.append(equipo)
     
@@ -114,63 +114,10 @@ class TemporadaNFL:
     equipos = tuple(q)
     thanksgiving = int(s[0])
     navidad = (int(s[1]), s[2])
+    max_interes = int(s[3)
     # return [partidos, estadios, equipos, thanksgiving, navidad]
     num_semanas = 18
-    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving)
-  
-  def get_partidos(info, indice):
-    p = []
-    fin = indice
-    for i in range(indice, len(info)):
-      if(info[i] == "\n"):
-        fin = i + 1
-        break
-      s = info[i].split()
-      partido = {
-          "id" : int(s[0]),
-          "local" : int(s[1]),
-          "visitante" : int(s[2]),
-          "estadio" : int(s[3]),
-          "interes" : int(s[4])
-      }
-      p.append(partido)
-    return fin, p
-  
-  def get_estadios(info, indice):
-    fin = indice
-    e = []
-    for i in range(indice, len(info)):
-      if(info[i] == "\n"):
-        fin = i + 1
-        break
-      s = info[i].split()
-      estadio = {
-          "id" : int(s[0]),
-          "huso" : s[1]
-      }
-      e.append(estadio)
-    return fin, e
-
-  def get_equipos(info, indice):
-    fin = indice
-    q = []
-    for i in range(indice, len(info), 2):
-      if(info[i] == "\n"):
-        fin = i + 1
-        break
-      s = info[i].split()
-      lista = list(map(int, info[i+1].split()))
-      equipo = {
-          "id" : int(s[0]),
-          "nombre" : s[1],
-          "conferencia" : s[2],
-          "division" : s[3],
-          "bye_pasado" : s[4],
-          "3_consecutivos" : s[5],
-          "oponentes" : lista
-      }
-      q.append(equipo)
-    return fin, q
+    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving, max_interes)
   
   
   def horarios_semana(self, semana: int) -> list:

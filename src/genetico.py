@@ -132,10 +132,9 @@ class AlgoritmoGenetico:
       for semana, (partido, _) in enumerate(juegos):
         orden_partidos[equipo][partido] = semana
     
-    for paso in range(3):
+    for _ in range(3):
       for i in range(solucion.shape[0]):
         equipo = (i+inicio) % solucion.shape[0]
-        # print(equipo)
         for semana, partido in enumerate(solucion[equipo,:,0]):
           # Encontramos al equipo contra el que juega
           contra = self.ejemplar.equipo_contra(equipo, partido)
@@ -152,11 +151,29 @@ class AlgoritmoGenetico:
           orden_partidos[contra][partido] = semana
           orden_partidos[contra][partido_colision] = ind_partido
 
-        for semana, partido in enumerate(solucion[equipo,:,0]):
+      for i in range(solucion.shape[0]):
+        equipo = (i+inicio) % solucion.shape[0]
+        partidos = set(solucion[equipo,:,0])
+        # for semana, partido in enumerate(solucion[equipo,:,0]):
+        for partido in partidos:
+          semana = orden_partidos[equipo][partido]
           contra = self.ejemplar.equipo_contra(equipo, partido)
-          if contra == None: continue
-          assert solucion[contra,semana,0] == partido, f"Error con el partido {partido} en semana {semana} y equipo {equipo}: {bye1} {bye2}"
+          if contra is None: continue
+          if solucion[contra,semana,0] == partido: continue
+          bye_equipo = orden_partidos[equipo][self.ejemplar.bye]
+          bye_contra = orden_partidos[contra][self.ejemplar.bye]
+          if bye_equipo == bye_contra:
+            semana_contra = orden_partidos[contra][partido]
+            solucion[equipo,bye_equipo,0] = partido
+            solucion[equipo,semana,0] = self.ejemplar.bye
+            solucion[contra,bye_contra,0] = partido
+            solucion[contra,semana_contra,0] = self.ejemplar.bye
+            orden_partidos[equipo][partido] = bye_equipo
+            orden_partidos[equipo][self.ejemplar.bye] = semana
+            orden_partidos[contra][partido] = bye_contra
+            orden_partidos[contra][self.ejemplar.bye] = semana_contra
 
+    # VERIFICACION
     partidos_col = set()
     for equipo in range(32):
       for semana, partido in enumerate(solucion[equipo,:,0]):

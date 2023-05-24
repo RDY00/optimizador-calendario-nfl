@@ -6,7 +6,7 @@ class TemporadaNFL:
   # Para optimizar la velocidad de acceso a los atributos
   __slots__ = ("num_equipos", "num_semanas", "equipos", "partidos",
                "estadios", "navidad", "thanksgiving", "horarios",
-               "semanas_sin_horario", "bye")
+               "semanas_sin_horario", "bye", "max_calif_partidos")
 
   def __init__(self, num_semanas: int, equipos: tuple, partidos: tuple,
       estadios: tuple, navidad: tuple, thanksgiving: int) -> None:
@@ -47,6 +47,8 @@ class TemporadaNFL:
     self.horarios = {k:v for v,k in enumerate(nombres_horarios)}
     self.semanas_sin_horario = (14,17) # Indexada desde 0
     self.bye = len(partidos)
+    self.max_calif_partidos = max(
+      partidos, key=lambda x: x["calificacion"])["calificacion"]
 
   @classmethod
   def leer_archivo(cls, archivo: "Path") -> "TemporadaNFL":
@@ -63,40 +65,12 @@ class TemporadaNFL:
     """
     with open(archivo) as data:
       info = data.readlines()
-    p = []
-    e = []
-    q = []
-    indice = 0
-    for i in range(len(info)):
-      if(info[i] == "\n"):
-        indice = i + 1
-        break
-      s = info[i].split()
-      partido = {
-        # "id" : int(s[0]),
-        "local" : int(s[1]),
-        "visitante" : int(s[2]),
-        "estadio" : int(s[3]),
-        "interes" : int(s[4])
-      }
-      p.append(partido)
-      
-    for i in range(indice, len(info)):
-      if(info[i] == "\n"):
-        indice = i + 1
-        break
-      s = info[i].split()
-      estadio = {
-        # "id" : int(s[0]),
-        "huso" : s[1]
-      }
-      e.append(estadio)
+
+    p, e, q = [], [], []
+    i = 0
     
-    for i in range(indice, len(info), 2):
-      if(info[i] == "\n"):
-        break
+    while info[i] != "\n":
       s = info[i].split()
-      #lista = list(map(int, info[i+1].split()))
       equipo = {
         # "id" : int(s[0]),
         "acronimo" : s[1],
@@ -104,19 +78,47 @@ class TemporadaNFL:
         "division" : s[3],
         "bye_anterior" : s[4],
         "3_consecutivos" : s[5],
-        "partidos" : lista
+        "partidos" : []
       }
       q.append(equipo)
+      i += 1
+
+    i += 1
+    while info[i] != "\n":
+      s = info[i].split()
+      estadio = {
+        # "id" : int(s[0]),
+        "huso" : s[1]
+      }
+      e.append(estadio)
+      i += 1
+
+    i += 1
+    while info[i] != "\n":
+      s = info[i].split()
+      id_partido = int(s[0])
+      local = int(s[1])
+      visitante = int(s[2])
+      partido = {
+        # "id" : id_partido,
+        "local" : local,
+        "visitante" : visitante,
+        "estadio" : int(s[3]),
+        "calificacion" : int(s[4])
+      }
+      p.append(partido)
+      q[local]["partidos"].append(id_partido)
+      q[visitante]["partidos"].append(id_partido)
+      i += 1
     
-    s = info[i+1].split()
     partidos = tuple(p)
     estadios = tuple(e)
     equipos = tuple(q)
-    thanksgiving = int(s[0])
-    navidad = (int(s[1]), s[2])
-    max_interes = int(s[3])
+    thanksgiving = int(info[i+1])
+    s = info[i+2].split()
+    navidad = (int(s[0]), s[1])
     num_semanas = 18
-    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving, max_interes)
+    return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving)
   
   def horarios_semana(self, semana: int) -> list:
     """ Devuelve la lista de horarios codificados de la semana

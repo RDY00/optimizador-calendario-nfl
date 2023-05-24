@@ -131,46 +131,70 @@ class AlgoritmoGenetico:
     for equipo, juegos in enumerate(solucion):
       for semana, (partido, _) in enumerate(juegos):
         orden_partidos[equipo][partido] = semana
-    
-    for paso in range(3):
-      for i in range(solucion.shape[0]):
-        equipo = (i+inicio) % solucion.shape[0]
-        # print(equipo)
-        for semana, partido in enumerate(solucion[equipo,:,0]):
-          # Encontramos al equipo contra el que juega
-          contra = self.ejemplar.equipo_contra(equipo, partido)
-          # Si es BYE no hacemos nada
-          if contra is None: continue
-          # Si el partido es correcto terminamos
-          if solucion[contra,semana,0] == partido: continue
-          # Sino, intercambiamos el partido de colisión con el que va
-          partido_colision = solucion[contra,semana,0]
-          ind_partido = orden_partidos[contra][partido]
-          solucion[contra,semana,0] = partido
-          solucion[contra,ind_partido,0] = partido_colision
-          # Actualizamos el diccionario de índices
-          orden_partidos[contra][partido] = semana
-          orden_partidos[contra][partido_colision] = ind_partido
 
-        for semana, partido in enumerate(solucion[equipo,:,0]):
-          contra = self.ejemplar.equipo_contra(equipo, partido)
-          if contra == None: continue
-          assert solucion[contra,semana,0] == partido, f"Error con el partido {partido} en semana {semana} y equipo {equipo}: {bye1} {bye2}"
+    partidos_fijados = set()
 
-    partidos_col = set()
+    for i in range(solucion.shape[0]):
+      equipo = (i+inicio) % solucion.shape[0]
+      partidos = set(solucion[equipo,:,0]) 
+      semanas_libres = set(range(solucion.shape[1]))
+      pendientes = set()
+
+      for partido in partidos:
+        contra = self.ejemplar.equipo_contra(equipo, partido)
+        s = orden_partidos[equipo][partido]
+        if contra is None: continue
+        elif solucion[contra,s,0] == partido:
+          semanas_libres.discard(s)
+          partidos_fijados.add(partido)
+        elif solucion[contra,s,0] not in partidos_fijados:
+          self.repara_partido(solucion, equipo, partido, orden_partidos)
+          partidos_fijados.add(partido)
+          semanas_libres.discard(s)
+        else:
+          ss = orden_partidos[contra][partido]
+          cambio = solucion[equipo,ss,0]
+          if cambio in partidos_fijados:
+            pendientes.add(partido)
+          else:
+            solucion[equipo,s,0] = cambio
+            solucion[equipo,ss,0] = partido
+            orden_partidos[equipo][partido] = ss
+            orden_partidos[equipo][cambio] = s
+            partidos_fijados.add(partido)
+          semanas_libres.discard(ss)
+
+      print(len(pendientes), len(semanas_libres))
+      for partido in pendientes:
+        contra = self.ejemplar.equipo_contra(equipo, partido)
+        print(len(semanas_libres))
+        for s in semanas_libres:
+          if solucion[contra,s,0] in partidos_fijados: continue
+          solucion[equipo,s,0] = partido
+          orden_partidos[equipo][partido] = s
+          self.repara_partido(solucion, equipo, partido, orden_partidos)
+          partidos_fijados.add(partido)
+          print("dentro antes", len(semanas_libres))
+          semanas_libres.discard(s)
+          print("dentro", len(semanas_libres))
+          break
+
+      print(len(semanas_libres))
+
+      assert len(semanas_libres) == 1, f"Solo deberia de quedar una semana {equipo} {semanas_libres}\n{solucion[:,:,0]}"
+      solucion[equipo,semanas_libres.pop(),0] = self.ejemplar.bye
+
+      for semana, partido in enumerate(solucion[equipo,:,0]):
+        contra = self.ejemplar.equipo_contra(equipo, partido)
+        if contra == None: continue
+        assert solucion[contra,semana,0] == partido, f"Error con el partido {partido} en semana {semana} y equipo {equipo}\n{solucion[:,:,0]}"
+
     for equipo in range(32):
       for semana, partido in enumerate(solucion[equipo,:,0]):
         contra = self.ejemplar.equipo_contra(equipo, partido)
         if contra == None: continue
         if solucion[contra,semana,0] != partido:
-          partidos_col.add(partido)
-          bye1 = orden_partidos[equipo][self.ejemplar.bye]
-          bye2 = orden_partidos[contra][self.ejemplar.bye]
-          print(f"Error con el partido {partido} en semana {semana} y equipo {equipo}: {bye1} {bye2}")
-
-    print(len(partidos_col))
-    print(partidos_col)
-    print(solucion[:,:,0])
+          print(f"Error con el partido {partido} en semana {semana} y equipo {equipo}")
 
     # VERSION CON PROPAGACION
     # # Reparación desde la fila modificada
@@ -198,6 +222,16 @@ class AlgoritmoGenetico:
     #       e, p, s = c, pc, sc
     #       if p == partido: break # No alteramos la fila que estamos moviendo
     #       # assert p != partido, "No debería de tocarse esa fila nunca" # Debug
+
+  def repara_partido(self, solucion, equipo, partido, orden_partidos):
+    contra = self.ejemplar.equipo_contra(equipo, partido)
+    semana = orden_partidos[equipo][partido]
+    semana_contra = orden_partidos[contra][partido]
+    partido_colision = solucion[contra,semana,0]
+    solucion[contra,semana,0] = partido
+    solucion[contra,semana_contra,0] = partido_colision
+    orden_partidos[contra][partido] = semana
+    orden_partidos[contra][partido_colision] = semana_contra
 
   def agrega_horarios(self, inicio: int, fin: int, solucion: np.ndarray,
       horarios: list) -> None:

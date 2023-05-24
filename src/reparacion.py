@@ -1,6 +1,6 @@
 
 equipos = [[] for _ in range(32)]
-with open("../data/2023.txt") as f:
+with open("../data/temporada2023.txt") as f:
   for l in f.readlines():
     if l == '\n': break
     id, l, v, *_ = map(int, l.strip().split(' '))
@@ -8,10 +8,10 @@ with open("../data/2023.txt") as f:
     equipos[l].append(id)
     equipos[v].append(id)
 
-with open("correcion.txt", "w") as f:
-  for i, equipo in enumerate(equipos):
-    print(f"{i} {len(equipo)}")
-    f.write(' '.join(map(str, equipo)) + "\n")
+for i, equipo in enumerate(equipos):
+  print(f"{i} {len(equipo)}")
+
+exit()
 
 equipos = [
   (0, "BUF"),

@@ -42,6 +42,9 @@ class EvaluacionNFL(ABC):
     --------
     int : Evaluacion obtenida según las reglas de la función
     """
+    return self.max_eval - sum(r(solucion) for r in self.reglas)
+
+  def analiza_solucion(self, solucion: np.ndarray) -> None:
     val = 0
     for r in self.reglas:
       e = r(solucion)
@@ -49,5 +52,4 @@ class EvaluacionNFL(ABC):
       val += e
 
     print(f"{self.max_eval=} {val=}")
-    return self.max_eval - val
 

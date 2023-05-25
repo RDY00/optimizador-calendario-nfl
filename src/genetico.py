@@ -11,8 +11,8 @@ class AlgoritmoGenetico:
 
   # Optimizar accesos
   __slots__ = ("ejemplar", "evalua_solucion", "p_cruza", "p_mutacion",
-               "p_cruza_filas", "p_muta_filas", "poblacion",
-               "tam_poblacion", "mejor", "total_eval", "cdf", "semilla", "rng")
+               "poblacion", "tam_poblacion", "mejor", "total_eval", "cdf",
+               "semilla", "rng", "max_eval")
 
   def __init__(self, ejemplar: TemporadaNFL,
       fun_evaluacion: EvaluacionNFL) -> None:
@@ -31,13 +31,12 @@ class AlgoritmoGenetico:
     # Probabilidades
     self.p_cruza = 0
     self.p_mutacion = 0
-    self.p_cruza_filas = 0
-    self.p_muta_filas = 0
     # Datos población
     self.poblacion = None
     self.tam_poblacion = 0
     self.mejor = None
     self.total_eval = 0
+    self.max_eval = fun_evaluacion.max_eval
     self.cdf = None
     # Generador de aleatorios
     self.semilla = None
@@ -85,7 +84,7 @@ class AlgoritmoGenetico:
     dict : Diccionario con las llaves 'solucion' y 'evaluacion'
     """
     sol = np.zeros(
-      (self.ejemplar.num_equipos,self.ejemplar.num_semanas,2), dtype=np.uint16)
+      (self.ejemplar.num_equipos,self.ejemplar.num_semanas,2), dtype=int)
 
     # Rellenamos filas aleatoriamente
     for equipo in range(self.ejemplar.num_equipos):
@@ -330,19 +329,12 @@ class AlgoritmoGenetico:
       
       # Cruza
       if self.rng.random() < self.p_mutacion:
-        if self.rng.random() < self.p_cruza_filas:
-          h1, h2 = self.cruza_filas(h1,h2)
-        else:
-          h1, h2 = self.cruza_cols(h1,h2)
+        h1, h2 = self.cruza_cols(h1,h2)
 
       # Mutación
       if self.rng.random() < self.p_cruza:
-        if self.rng.random() < self.p_muta_filas:
-          self.muta_filas(h1)
-          self.muta_filas(h2)
-        else:
-          self.muta_cols(h1)
-          self.muta_cols(h2)
+        self.muta_filas(h1)
+        self.muta_filas(h2)
 
       # Agregar
       nueva_poblacion.append({
@@ -373,8 +365,8 @@ class AlgoritmoGenetico:
     self.cdf = np.cumsum(probs)
 
   def ejecutar(self, tam_poblacion: int = 50, t_limite: int = 60,
-      p_cruza: float = 0.8, p_mutacion: float = 0.1, p_cruza_filas: float = 0.5,
-      p_muta_filas: float = 0.5, semilla: int = None) -> dict:
+      p_cruza: float = 0.8, p_mutacion: float = 0.1, semilla: int = None,
+      muestra_cada: int = 1000, grafica_cada: int = 0) -> dict:
     """ Ejecuta el algoritmo genético con los parámetros dados
 
     El algoritmo termina cuando termina el tiempo limite o cuando se alcanza
@@ -419,10 +411,9 @@ class AlgoritmoGenetico:
     """ 
     self.semilla = semilla if semilla is not None else int(time.time())
     self.rng = np.random.default_rng(semilla)
-    self.evalua_solucion = lambda _: 0
 
-    # self.p_cruza = p_cruza
-    # self.p_mutacion = p_mutacion
+    self.p_cruza = p_cruza
+    self.p_mutacion = p_mutacion
     self.tam_poblacion = tam_poblacion
 
     optimos = []
@@ -439,17 +430,16 @@ class AlgoritmoGenetico:
 
     t_actual = time.time()
         
-    # with tqdm(total=t_limite, unit_scale=True) as bar:
     with tqdm(desc="Generación", unit="") as bar:
       while t_actual < timeout and self.mejor["evaluacion"] != self.max_eval:
         self.poblacion_generacional()
         generacion += 1
         # Datos estadisticos
-        optimos.append(self.mejor["evaluacion"])
-        promedios.append(self.total_eval / self.tam_poblacion)
-        # tn_actual = time.time()
-        # bar.update(tn_actual - t_actual)
-        # t_actual = tn_actual
+        if generacion % grafica_cada == 0:
+          optimos.append(self.mejor["evaluacion"])
+          promedios.append(self.total_eval / self.tam_poblacion)
+        if generacion % muestra_cada == 0:
+          print(f"Generacion: {generacion}\nEvaluacion: {self.mejor['evaluacion']}")
         t_actual = time.time()
         bar.update(1)
 

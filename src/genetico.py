@@ -43,6 +43,27 @@ class AlgoritmoGenetico:
     self.semilla = None
     self.rng = None
 
+  def verifica_solucion(self, solucion: np.ndarray) -> bool:
+    bien = True
+    for equipo, partidos in enumerate(solucion[:,:,0]):
+      ps1 = np.sort(partidos)
+      ps2 = np.sort(self.ejemplar.equipos[equipo]["partidos"] + [self.ejemplar.bye])
+      if np.any(ps1 != ps2):
+        print(f"Error {equipo=} {ps1=} {ps2=}")
+        bien = False
+
+    for semana in range(self.ejemplar.num_semanas):
+      horarios = self.ejemplar.horarios_semana(semana) * 2
+      horarios += [self.ejemplar.horarios["NONE"]] * \
+                    (self.ejemplar.num_equipos - len(horarios))
+      hs1 = np.sort(horarios)
+      hs2 = np.sort(solucion[:,semana,1])
+      if np.any(hs1 != hs2):
+        print(f"Error {semana=} {hs1=} {hs2=}")
+        bien = False
+
+    return bien
+
   def inicializa_poblacion(self) -> None:
     """ Inicializa la poblacion inicial con TAM_POBLACION individuos
 
@@ -67,217 +88,25 @@ class AlgoritmoGenetico:
       (self.ejemplar.num_equipos,self.ejemplar.num_semanas,2), dtype=np.uint16)
 
     # Rellenamos filas aleatoriamente
-    for i in range(self.ejemplar.num_equipos):
+    for equipo in range(self.ejemplar.num_equipos):
       partidos = np.array(
-        self.ejemplar.equipos[i]["partidos"] + [self.ejemplar.bye])
+        self.ejemplar.equipos[equipo]["partidos"] + [self.ejemplar.bye])
       self.rng.shuffle(partidos)
-      sol[i,:,0] = partidos
+      sol[equipo,:,0] = partidos
 
-    # Reparamos filas
-    self.repara_filas(sol)
-
-    return sol
-
-    lista_horarios = []
     # Rellenamos columnas
     for semana in range(self.ejemplar.num_semanas):
       # Horarios esterales de la semana aleatorios
-      horarios = self.ejemplar.horarios_semana(semana)
+      horarios = self.ejemplar.horarios_semana(semana) * 2
+      horarios += [self.ejemplar.horarios["NONE"]] * \
+                    (self.ejemplar.num_equipos - len(horarios))
       self.rng.shuffle(horarios)
-      lista_horarios.append(horarios)
-
-    self.agrega_horarios(0, sol.shape[1], sol, lista_horarios)
-
-      # # Obtenemos partidos y sus índices
-      # partidos, inv = np.unique(sol[:,semana,0], return_inverse=True)
-      # # Es el contador con el índice para repartir horarios a bye
-      # ind_bye = len(partidos)
-      # if partidos[-1] == self.ejemplar.bye: ind_bye-=1
-
-      # # Repartimos equipo por equipo
-      # for equipo,ind in enumerate(inv):
-      #   partido = sol[equipo,semana,0]
-      #   # Cuando es bye y |horarios| > |partidos|
-      #   if partido == self.ejemplar.bye and ind_bye < len(horarios):
-      #     sol[equipo,semana,1] = horarios[ind_bye]
-      #     ind_bye += 1
-      #   # Cuando |horarios| <= |partidos| siempre entra aqui
-      #   elif ind < len(horarios):
-      #     sol[equipo,semana,1] = horarios[ind]
-      #   # Cuando |horarios| < |partidos| algunos partidos se quedan en 0
+      sol[:,semana,1] = horarios
 
     return {
       "solucion" : sol,
       "evaluacion" : self.evalua_solucion(sol)
     }
-
-  def repara_filas(self, solucion: np.ndarray, inicio: int = 0) -> None:
-    """ Repara las filas de una solución para que tenga un formato válido
-
-    Recorre todas las filas de arriba a abajo para asegurarse de que todos los
-    partidos estén correctamente marcado en ambos equipos que los juegan.
-
-    Parámetros
-    ----------
-    solucion : np.ndarray
-      Solución a reparar, la reparación ocurre sobre está misma (se modifica)
-    inicio : int
-      Fila de inicio para la reparacíon, se recorren todas las filas empezando
-      desde esa. Por defecto es 0
-    """
-    # Diccionario con el orden de los partidos para tener búsqueda de O(1)
-    orden_partidos = [{} for i in range(self.ejemplar.num_equipos)]
-
-    for equipo, juegos in enumerate(solucion):
-      for semana, (partido, _) in enumerate(juegos):
-        orden_partidos[equipo][partido] = semana
-    
-    for _ in range(3):
-      for i in range(solucion.shape[0]):
-        equipo = (i+inicio) % solucion.shape[0]
-        for semana, partido in enumerate(solucion[equipo,:,0]):
-          # Encontramos al equipo contra el que juega
-          contra = self.ejemplar.equipo_contra(equipo, partido)
-          # Si es BYE no hacemos nada
-          if contra is None: continue
-          # Si el partido es correcto terminamos
-          if solucion[contra,semana,0] == partido: continue
-          # Sino, intercambiamos el partido de colisión con el que va
-          partido_colision = solucion[contra,semana,0]
-          ind_partido = orden_partidos[contra][partido]
-          solucion[contra,semana,0] = partido
-          solucion[contra,ind_partido,0] = partido_colision
-          # Actualizamos el diccionario de índices
-          orden_partidos[contra][partido] = semana
-          orden_partidos[contra][partido_colision] = ind_partido
-
-      for i in range(solucion.shape[0]):
-        equipo = (i+inicio) % solucion.shape[0]
-        partidos = set(solucion[equipo,:,0])
-        # for semana, partido in enumerate(solucion[equipo,:,0]):
-        for partido in partidos:
-          semana = orden_partidos[equipo][partido]
-          contra = self.ejemplar.equipo_contra(equipo, partido)
-          if contra is None: continue
-          if solucion[contra,semana,0] == partido: continue
-          bye_equipo = orden_partidos[equipo][self.ejemplar.bye]
-          bye_contra = orden_partidos[contra][self.ejemplar.bye]
-          if bye_equipo == bye_contra:
-            semana_contra = orden_partidos[contra][partido]
-            solucion[equipo,bye_equipo,0] = partido
-            solucion[equipo,semana,0] = self.ejemplar.bye
-            solucion[contra,bye_contra,0] = partido
-            solucion[contra,semana_contra,0] = self.ejemplar.bye
-            orden_partidos[equipo][partido] = bye_equipo
-            orden_partidos[equipo][self.ejemplar.bye] = semana
-            orden_partidos[contra][partido] = bye_contra
-            orden_partidos[contra][self.ejemplar.bye] = semana_contra
-
-    # VERIFICACION
-    partidos_col = set()
-    for equipo in range(32):
-      for semana, partido in enumerate(solucion[equipo,:,0]):
-        contra = self.ejemplar.equipo_contra(equipo, partido)
-        if contra == None: continue
-        if solucion[contra,semana,0] != partido:
-          partidos_col.add(partido)
-          bye1 = orden_partidos[equipo][self.ejemplar.bye]
-          bye2 = orden_partidos[contra][self.ejemplar.bye]
-          print(f"Error con el partido {partido} en semana {semana} y equipo {equipo}: {bye1} {bye2}")
-
-    print(len(partidos_col))
-    print(partidos_col)
-    print(solucion[:,:,0])
-
-    # VERSION CON PROPAGACION
-    # # Reparación desde la fila modificada
-    # for equipo in range(solucion.shape[0]):
-    #   e = equipo
-    #   for semana,partido in enumerate(solucion[equipo,:,0]):
-    #     s, p = semana, partido
-    #     # Repetimos hasta que no haya más colisiones
-    #     while True:
-    #       # Si es BYE terminamos
-    #       if p == self.ejemplar.bye: break
-    #       # Obtenemos al equipo contra el que se juega en contra (c)
-    #       local = self.ejemplar.partidos[p]["local"]
-    #       visitante = self.ejemplar.partidos[p]["visitante"]
-    #       c = local if local != e else visitante
-    #       # Si el partido está bien posicionado terminamos esta iteración
-    #       if solucion[c,s,0] == p: break
-    #       # Sino, intercambiamos posiciones con el partido mal posicionado (pc)
-    #       pc = solucion[c,s,0] # Partido de la colisión con p
-    #       sc = orden_partidos[c][p] # Semana de la colisión con p
-    #       solucion[c,s,0], solucion[c,sc,0] = solucion[c,sc,0], solucion[c,s,0]
-    #       # Actualizamos valores para la nueva iteración
-    #       orden_partidos[c][p], orden_partidos[c][pc] = orden_partidos[c][pc], \
-    #                                                     orden_partidos[c][p]
-    #       e, p, s = c, pc, sc
-    #       if p == partido: break # No alteramos la fila que estamos moviendo
-    #       # assert p != partido, "No debería de tocarse esa fila nunca" # Debug
-
-  def agrega_horarios(self, inicio: int, fin: int, solucion: np.ndarray,
-      horarios: list) -> None:
-    """ Asigna los horarios dados a las columnas de la solucion en orden
-
-    Se asegura de que cada partido tenga el mismo horario asignado en ambas
-    apariciones por semana en el intervalo de semanas [inicio,fin) de la
-    solución.
-
-    Para cada semana en [inicio,fin) se asignan los horarios a los
-    partidos en su orden a aparicición para mantener un orden relativo.
-        
-    La solución se altera directamente.
-    
-    Parámetros
-    ----------
-    inicio : int
-      Inicio del rango de semanas a alterar
-    fin : int
-      fin del rango de semanas a alterar
-    solucion : np.ndarray
-      Solución a la que se le agregarán los horarios
-    horarios : lista
-      Lista de los horarios por semana. Debe de haber inicio - fin horarios
-    """
-    for h,semana in zip(range(inicio,fin),horarios):
-      # Obtenemos los partidos y sus índices para reconstruirlos
-      # Los partidos deben de estar en orden de aparición
-      partidos, idx, inv = np.unique(solucion[:,semana,0], return_index=True, return_inverse=True)
-      partidos_map = np.sort(idx)
-      ind_bye = len(partidos) # Índice para repartir horarios bye
-      if partidos[-1] == self.ejemplar.bye: ind_bye-=1
-
-      # Repartimos equipo por equipo
-      for equipo,ind in enumerate(inv):
-        partido = solucion[equipo,semana,0]
-        # Cuando es bye y |h| > |partidos|
-        if partido == self.ejemplar.bye and ind_bye < len(h):
-          sol[equipo,semana,1] = h[partidos_map[ind_bye]]
-          ind_bye += 1
-        # Cuando |h| <= |partidos| siempre entra aqui
-        elif ind < len(h):
-          solucion[equipo,semana,1] = h[partidos_map[ind]]
-        # Cuando |h| < |partidos| algunos partidos se quedan en 0
-
-    # # p = padre.copy()
-    # for semana in range(inicio, fin):
-    #   for equipo,partido in enumerate(hijo[:,semana,0]):
-    #     if partido == self.ejemplar.bye: continue
-    #     # Encontramos contra quien juega
-    #     contra = self.ejemplar.equipo_contra(equipo, partido)
-    #     # Si es BYE no hacemos nada
-    #     if contra is None: continue
-    #     # Si los horarios están bien, no hacemos nada
-    #     if hijo[contra,semana,1] == hijo[equipo,semana,1]: continue
-    #     # Sino, intercambiamos el horario mal con el correcto
-    #     partido_colision = padre[equipo,semana,0]
-    #     equipo_colision = self.ejemplar.equipo_contra(equipo, partido_colision)
-    #     hijo[contra,semana,1], hijo[equipo_colision,semana,1] = \
-    #       hijo[equipo_colision,semana,1], hijo[contra,semana,1]
-    #     # Actualizamos los indices
-    #     # p[contra,semana,1], p[equipo_colision,semana,1] = \
-    #     #   p[equipo_colision,semana,1], p[contra,semana,1]
 
   def cruza_filas(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
     """ Aplica cruza por filas entre los padres
@@ -302,23 +131,58 @@ class AlgoritmoGenetico:
     --------
     tuple : Tupla con los dos hijos generados
     """
-    hijo1 = np.zeros(sol1.shape)
-    hijo2 = np.zeros(sol2.shape)
+    limite = self.ejemplar.num_equipos
+    # Rango que se copia, m < n
+    m = self.rng.integers(limite-1)
+    n = self.rng.integers(m+1, limite) + 1
 
-    # La dimensión de horarios es igual
-    hijo1[:,:,1] = sol1[:,:,1]
-    hijo2[:,:,1] = sol2[:,:,1]
+    hijo1 = sol1.copy()
+    hijo2 = sol2.copy()
+     
+    # Copiamos todas esas filas
+    hijo1[m:n] = sol2[m:n]
+    hijo2[m:n] = sol1[m:n]
     
-    for equipo in range(sol1.shape[0]):
-      if equipo % 2 == 0:
-        hijo1[equipo,:,0] = sol1[equipo,:,0]
-        hijo2[equipo,:,0] = sol2[equipo,:,0]
-      else:
-        hijo1[equipo,:,0] = sol2[equipo,:,0]
-        hijo2[equipo,:,0] = sol1[equipo,:,0]
+    # Reparamos columnas
+    for s in range(self.ejemplar.num_semanas):
+      # Datos del hijo 1 y 2
+      h1 = sol1[:,s,1]
+      r1 = {k:0 for k in set(h1)}
+      h2 = sol2[:,s,1]
+      r2 = {k:0 for k in set(h2)}
+      for v1, v2 in zip(h1,h2):
+        r1[v1] += 1
+        r2[v2] += 1
 
-    self.repara_filas(hijo1)
-    self.repara_filas(hijo2)
+      # Obtenemos los índices de lo sustituido
+      for e in range(m,n):
+        r1[sol2[e,s,1]] -= 1
+        r2[sol1[e,s,1]] -= 1
+
+      # Corregimos los indices con OX1
+      ind1 = 0
+      ind2 = 0
+      for e in range(m):
+        while r1[h1[ind1]] == 0:
+          ind1 += 1
+        hijo1[e,s,1] = h1[ind1]
+        r1[h1[ind1]] -= 1
+
+        while r2[h2[ind2]] == 0:
+          ind2 += 1
+        hijo2[e,s,1] = h2[ind2]
+        r2[h2[ind2]] -= 1
+        
+      for e in range(n,limite):
+        while r1[h1[ind1]] == 0:
+          ind1 += 1
+        hijo1[e,s,1] = h1[ind1]
+        r1[h1[ind1]] -= 1
+
+        while r2[h2[ind2]] == 0:
+          ind2 += 1
+        hijo2[e,s,1] = h2[ind2]
+        r2[h2[ind2]] -= 1
 
     return hijo1, hijo2
 
@@ -346,25 +210,39 @@ class AlgoritmoGenetico:
     --------
     tuple : Tupla con los dos hijos generados
     """
+    limite = self.ejemplar.num_semanas
+    # Rango que se copia, m < n
+    m = self.rng.integers(limite-1)
+    n = self.rng.integers(m+1, limite) + 1
+
     hijo1 = sol1.copy()
     hijo2 = sol2.copy()
+     
+    # Copiamos todas esas filas
+    hijo1[:,m:n] = sol2[:,m:n]
+    hijo2[:,m:n] = sol1[:,m:n]
+    
+    # Reparamos columnas
+    for e in range(self.ejemplar.num_equipos):
+      ind1, ind2 = {}, {}
+      # Sustituimos la seccion que se mantiene en los hijos
+      for s in range(m,n):
+        ind1[sol2[e,s,0]] = sol1[e,s,0]
+        ind2[sol1[e,s,0]] = sol2[e,s,0]
 
-    # Punto de cruce
-    cruce = self.rng.integers(sol1.shape[0])
+      # Corregimos los indices de la izquierda
+      for s in range(m):
+        while hijo1[e,s,0] in ind1:
+          hijo1[e,s,0] = ind1[hijo1[e,s,0]]
+        while hijo2[e,s,0] in ind2:
+          hijo2[e,s,0] = ind2[hijo2[e,s,0]]
 
-    # Rellenamos horarios por orden relativo
-    datos_horarios = (sol2,hijo1,cruce,sol2.shape[1]), (sol1,hijo2,0,cruce)
-
-    for padre,hijo,inicio,fin in datos_horarios:
-      lista_horarios = []
-      for semana in range(inicio,fin):
-        # Obtenemos los horarios por orden de aparición
-        _, ind = np.unique(padre[:,semana,1], return_index=True)
-        # Quitamos el primer índice porque seguro es NONE (0)
-        horarios = padre[np.sort(ind[1:]),semana,1][1:]
-        lista_horarios.append(horarios)
-      # Cruzamos con el hijo
-      self.agrega_horarios(inicio, fin, hijo, lista_horarios)
+      # Corregimos los indices de la derecha
+      for s in range(n,limite):
+        while hijo1[e,s,0] in ind1:
+          hijo1[e,s,0] = ind1[hijo1[e,s,0]]
+        while hijo2[e,s,0] in ind2:
+          hijo2[e,s,0] = ind2[hijo2[e,s,0]]
 
     return hijo1, hijo2
 
@@ -379,13 +257,11 @@ class AlgoritmoGenetico:
     solucion : np.ndarray
       Solución a mutar
     """
-    equipo = np.integers(solucion.shape[0])
-    semanas = np.integers(0, solucion.shape[1], 2)
+    equipo = self.rng.integers(solucion.shape[0])
+    semanas = self.rng.integers(0, solucion.shape[1], 2)
     
     solucion[equipo,semanas[0],0], solucion[equipo,semanas[1],0] = \
       solucion[equipo,semanas[1],0], solucion[equipo,semanas[0],0]
-
-    self.repara_filas(solucion, equipo)
 
   def muta_cols(self, solucion: np.ndarray) -> None:
     """ Muta una solución por columnas
@@ -398,22 +274,16 @@ class AlgoritmoGenetico:
     solucion : np.ndarray
       Solución a mutar
     """
-    # Obtenemos semana y equipos aleatorios
-    semana = np.integers(solucion.shape[1])
-    while True:
-      equipos = np.integers(0,solucion.shape[0],2)
-      partido1 = solucion[equipos[0],semana,0]
-      partido2 = solucion[equipos[1],semana,0]
-      if self.ejemplar.bye in equipos or partido1 != partido2: break
+    # Obtenemos semana y rangos aleatorios
+    semana = self.rng.integers(solucion.shape[1])
+    limite = self.ejemplar.num_equipos
+    m = self.rng.integers(limite-1)
+    n = self.rng.integers(m+1, limite) + 1
     
-    # Intercambiamos los horarios
-    solucion[equipos[0],semana,1], solucion[equipos[1],semana,1] = \
-      solucion[equipos[1],semana,1], solucion[equipos[0],semana,1]
-
-    # Propagamos el cambio
-    contras = [self.ejemplar.equipo_contra(e) for e in equipos]
-    solucion[contras[0],semana,1] = solucion[equipos[0],semana,1]
-    solucion[contras[1],semana,1] = solucion[equipos[1],semana,1]
+    # Insertamos y recorremos
+    tmp = solucion[n-1,semana,1]
+    for e in range(m,n):
+      solucion[e,semana,1], tmp = tmp, solucion[e,semana,1]
 
   def selecciona_padres(self, num_padres: int = 2) -> list:
     """ Selecciona NUM_PADRES padres para la nueva generación

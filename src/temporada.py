@@ -43,7 +43,7 @@ class TemporadaNFL:
     # {M,T,S}NF - {Monday,Thursday,Sunday} Night Football
     # XMAS - Christmas
     # TDAY - Thanksgiving
-    nombres_horarios = {"NONE", "MNF", "TNF", "SNF", "XMAS", "TDAY"}
+    nombres_horarios = ("NONE", "MNF", "TNF", "SNF", "XMAS", "TDAY")
     self.horarios = {k:v for v,k in enumerate(nombres_horarios)}
     self.semanas_sin_horario = (14,17) # Indexada desde 0
     self.bye = len(partidos)
@@ -154,7 +154,7 @@ class TemporadaNFL:
       if self.navidad[1] == "L":
         horarios = ["TNF"] + ["XMAS"]*3
 
-    return horarios
+    return [self.horarios[v] for v in horarios]
 
   def equipo_contra(self, equipo: int, partido: int) -> int:
     """ Devuelve el equipo contrario de un partido

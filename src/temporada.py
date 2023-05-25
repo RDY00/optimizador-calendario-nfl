@@ -6,7 +6,7 @@ class TemporadaNFL:
   # Para optimizar la velocidad de acceso a los atributos
   __slots__ = ("num_equipos", "num_semanas", "equipos", "partidos",
                "estadios", "navidad", "thanksgiving", "horarios",
-               "semanas_sin_horario", "bye", "max_calif_partidos")
+               "semanas_sin_horario", "bye", "max_calif_partido")
 
   def __init__(self, num_semanas: int, equipos: tuple, partidos: tuple,
       estadios: tuple, navidad: tuple, thanksgiving: int) -> None:
@@ -47,7 +47,7 @@ class TemporadaNFL:
     self.horarios = {k:v for v,k in enumerate(nombres_horarios)}
     self.semanas_sin_horario = (14,17) # Indexada desde 0
     self.bye = len(partidos)
-    self.max_calif_partidos = max(
+    self.max_calif_partido = max(
       partidos, key=lambda x: x["calificacion"])["calificacion"]
 
   @classmethod
@@ -76,8 +76,8 @@ class TemporadaNFL:
         "acronimo" : s[1],
         "conferencia" : s[2],
         "division" : s[3],
-        "bye_anterior" : s[4],
-        "3_consecutivos" : s[5],
+        "bye_anterior" : int(s[4]),
+        "3_consecutivos" : bool(s[5]),
         "partidos" : []
       }
       q.append(equipo)

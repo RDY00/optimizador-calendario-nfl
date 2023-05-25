@@ -18,7 +18,7 @@ class EvaluacionNFL(ABC):
     """
     self.ejemplar = ejemplar
     self.reglas = self.carga_reglas()
-    self.max_eval = sum(r.max_eval for r in reglas)
+    self.max_eval = sum(r.max_eval for r in self.reglas)
 
   @abstractmethod
   def carga_reglas(self) -> list:
@@ -42,5 +42,12 @@ class EvaluacionNFL(ABC):
     --------
     int : Evaluacion obtenida según las reglas de la función
     """
-    return self.max_eval - sum(r(solucion) for r in self._reglas)
+    val = 0
+    for r in self.reglas:
+      e = r(solucion)
+      print(f"{r.nombre=} {r.max_eval=} {e=}")
+      val += e
+
+    print(f"{self.max_eval=} {val=}")
+    return self.max_eval - val
 

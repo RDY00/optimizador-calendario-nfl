@@ -4,7 +4,7 @@ import numpy as np
 import time
 from tqdm.auto import tqdm
 from temporada import TemporadaNFL
-from evaluacion.base import EvaluacionNFL
+from evaluacion.evaluacion import EvaluacionNFL
 
 class AlgoritmoGenetico:
   """ Algoritmo Genético para las N-Reinas """

@@ -31,24 +31,15 @@ class Regla(ABC):
     """
     return self.max_val * self.penalizacion if self.es_dura else self.max_val
 
-  # @abstractproperty
-  # def descripcion(self) -> str:
-  #   """ Breve descripcion de la regla
-  #   Devuelve
-  #   --------
-  #   str : Descripción de la regla
-  #   """
-  #   raise NotImplementedError
-
   @abstractproperty
-  def max_val(self)
-    """ Devuelve la máxima evaluación que la regla puede dar 
+  def max_val(self) -> int:
+    """ Devuelve la máxima evaluación que la regla puede dar
 
     El valor no tiene que ser exacto, solo mayor al conocido
     blandas
 
-    Devuelve    
-    --------    
+    Devuelve
+    --------
     int : Valor máximo de la regla
     """
     raise NotImplementedError
@@ -82,4 +73,9 @@ class Regla(ABC):
     int : Evaluación
     """
     raise NotImplementedError
+
+  @property
+  def nombre(self) -> str:
+    """ Devuelve el nombre de la regla (el de su clase) """
+    return self.__class__.__name__
 

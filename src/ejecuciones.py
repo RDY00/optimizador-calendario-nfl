@@ -13,8 +13,8 @@ P_MUTACION = 0.1
 P_CRUZA = 0.8
 TAM_POBLACION = 50
 T_LIMITE = 3600 * 2 # segundos
-MUESTRA_CADA = 1000
-GRAFICA_CADA = 1000
+MUESTRA_CADA = 100
+GRAFICA_CADA = 100
 
 # Las semillas estás fijas, se pueden volver aleatorias quitando el 42 (semilla)
 SEMILLAS = np.random.default_rng(42).integers(32767, size=ITERACIONES)

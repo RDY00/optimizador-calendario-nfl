@@ -328,11 +328,11 @@ class AlgoritmoGenetico:
       h1, h2 = self.selecciona_padres(2)
       
       # Cruza
-      if self.rng.random() < self.p_mutacion:
+      if self.rng.random() < self.p_cruza:
         h1, h2 = self.cruza_cols(h1,h2)
 
       # Mutación
-      if self.rng.random() < self.p_cruza:
+      if self.rng.random() < self.p_mutacion:
         self.muta_filas(h1)
         self.muta_filas(h2)
 
@@ -429,6 +429,8 @@ class AlgoritmoGenetico:
     promedios.append(self.total_eval / self.tam_poblacion)
 
     t_actual = time.time()
+
+    print()
         
     with tqdm(desc="Generación", unit="") as bar:
       while t_actual < timeout and self.mejor["evaluacion"] != self.max_eval:
@@ -439,7 +441,7 @@ class AlgoritmoGenetico:
           optimos.append(self.mejor["evaluacion"])
           promedios.append(self.total_eval / self.tam_poblacion)
         if generacion % muestra_cada == 0:
-          print(f"Generacion: {generacion}\nEvaluacion: {self.mejor['evaluacion']}")
+            print(f"Generacion: {generacion} Evaluacion: {self.mejor['evaluacion']} Objetivo: {self.max_eval}")
         t_actual = time.time()
         bar.update(1)
 

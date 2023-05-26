@@ -329,12 +329,12 @@ class AlgoritmoGenetico:
       
       # Cruza
       if self.rng.random() < self.p_cruza:
-        h1, h2 = self.cruza_cols(h1,h2)
+        h1, h2 = self.cruza_filas(h1,h2)
 
       # Mutación
       if self.rng.random() < self.p_mutacion:
-        self.muta_filas(h1)
-        self.muta_filas(h2)
+        self.muta_cols(h1)
+        self.muta_cols(h2)
 
       # Agregar
       nueva_poblacion.append({

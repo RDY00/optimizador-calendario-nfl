@@ -1,5 +1,7 @@
 """ Representa ejemplares para el algoritmo de optimización """
 
+import numpy as np
+
 class TemporadaNFL:
   """ Describe los datos de una temporada de la NFL """
 
@@ -119,6 +121,15 @@ class TemporadaNFL:
     navidad = (int(s[0]), s[1])
     num_semanas = 18
     return cls(num_semanas, equipos, partidos, estadios, navidad, thanksgiving)
+
+  def guardar_solucion(self, solucion: str) -> str:  
+    return " ".join(map(str, solucion.flatten()))
+
+  def leer_solucion(self, archivo: str) -> np.ndarray:  
+    with open(archivo) as f:
+      a = list(map(int, f.read().split()))
+    return np.array(a, dtype=int).reshape(
+      (self.num_equipos, self.num_semanas, -1))
   
   def horarios_semana(self, semana: int) -> list:
     """ Devuelve la lista de horarios codificados de la semana

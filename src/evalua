@@ -1,0 +1,23 @@
+#!/bin/env python3
+
+import sys
+from temporada import TemporadaNFL
+from evaluacion.evaluacion2023 import EvaluacionNFL2023
+
+def uso():
+  print(f"{sys.argv[0]} EJEMPLAR SOLUCION")
+  exit(1)
+
+if len(sys.argv) != 3:
+  uso()
+
+try:
+  temporada = TemporadaNFL.leer_archivo(sys.argv[1])
+except Exception as err:
+  print("Hubo un error con la lectura del ejemplar", err, sep="\n")
+  raise
+
+sol = temporada.leer_solucion(sys.argv[2])
+evl = EvaluacionNFL2023(temporada)
+evl.analiza_solucion(sol)
+

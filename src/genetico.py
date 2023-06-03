@@ -43,6 +43,23 @@ class AlgoritmoGenetico:
     self.rng = None
 
   def verifica_solucion(self, solucion: np.ndarray) -> bool:
+    """ Verifica que una solución sea válida
+
+    Se considera válida una solución que cumple:
+    * La fila i es una permutación de los 17 partidos y el BYE del equipo i.
+    * La columnas j es una permutación de los posibles horarios de la semana
+      j+1 y todos los horarios aparecen en pares.
+
+    ESTA FUNCIÓN ES PARA PRUEBAS, NO SE USA EN EL ALGORITMO
+
+    Parámetros
+    ----------
+    solucion : np.ndarray
+      Solución a verificar
+
+    Devuelve
+    bool : True si la solución es correcta, False en otro caso
+    """
     bien = True
     for equipo, partidos in enumerate(solucion[:,:,0]):
       ps1 = np.sort(partidos)
@@ -110,14 +127,9 @@ class AlgoritmoGenetico:
   def cruza_filas(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
     """ Aplica cruza por filas entre los padres
     
-    Los hijos tiene las filas alternadas una a una de los padre en distinto
-    orden (un hijo tiene las filas pares de sol1 y las impares de sol2 y el
-    otro las tiene invertidas).
-
-    La dimesión de los horarios se hereda directamente de cada padre:
-    hijo1 tiene los de padre1 e hijo2 los de padre2.
-
-    Después de asignar las filas, las soluciones se reparan.
+    Para un hijo se toma una sección de filas de uno de los padres y se copia,
+    el resto se copia del otro padre. Los horarios no requieren arreglos, para
+    las filas se utiliza PXM como algoritmo de cruza.
 
     Parámetros
     ----------
@@ -188,15 +200,9 @@ class AlgoritmoGenetico:
   def cruza_cols(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
     """ Aplica cruza por columnas entre los padres
     
-    Se hace cruce de un punto entre los horarios, se escoge un número entre
-    0 y el número se semanas como cruce y cada hijo tiene la mitad de horarios
-    de la semana (0,cruce] de un padre y la de [cruce,semanas) del otro.
-
-    La dimesión de los partidos se hereda directamente de cada padre:
-    hijo1 tiene los de padre1 e hijo2 los de padre2.
-    
-
-    Después de asignar las columnas, las soluciones se reparan.
+    Para un hijo se toma una sección de columnas de uno de los padres y se
+    copia, el resto se copia del otro padre. Los horarios no requieren
+    arreglos, para las columnas se utiliza OX1 como algoritmo de cruza.
 
     Parámetros
     ----------
@@ -366,7 +372,7 @@ class AlgoritmoGenetico:
 
   def ejecutar(self, tam_poblacion: int = 50, t_limite: int = 60,
       p_cruza: float = 0.8, p_mutacion: float = 0.1, semilla: int = None,
-      muestra_cada: int = 1000, grafica_cada: int = 0) -> dict:
+      muestra_cada: int = 100, grafica_cada: int = 100) -> dict:
     """ Ejecuta el algoritmo genético con los parámetros dados
 
     El algoritmo termina cuando termina el tiempo limite o cuando se alcanza
@@ -384,17 +390,14 @@ class AlgoritmoGenetico:
       Por defecto es 0.9
     p_mutacion : float
       Probabilidad de mutar a cada invidivuo. Por defectto es 0.1
-    p_cruza_filas : float
-      Probabilidad de cruzar por filas, la probabilidad de cruzar por columnas
-      es complementaria.
-      Por defecto es 0.5
-    p_muta_filas : float
-      Probabilidad de mutar por filas, la probabilidad de mutar por columnas es
-      complementaria.
-      Por defecto es 0.5
     semilla : int
       Semilla para los valores aleatorios, si es None se usa time.time().
       Por defecto es None.
+    muestra_cada : int
+      Determinada cada cuántas generaciones se muestra el avance en pantalla.
+    grafica_cada : int
+      Determinada cada cuántas generaciones se almacenan los datos para graficar,
+      lo hacemos asi para evitar sobrecargar de información.
 
     Devuelve
     --------
@@ -430,8 +433,6 @@ class AlgoritmoGenetico:
 
     t_actual = time.time()
 
-    print()
-        
     with tqdm(desc="Generación", unit="") as bar:
       while t_actual < timeout and self.mejor["evaluacion"] != self.max_eval:
         self.poblacion_generacional()

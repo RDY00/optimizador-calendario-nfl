@@ -1,57 +1,65 @@
 #!/bin/env python3
 
 import sys
-from genetico import AlgoritmoGenetico, AlgoritmoGeneticoOX1
+from genetico import AlgoritmoGenetico
+from temporada import TemporadaNFL
+from evaluacion.evaluacion2023 import EvaluacionNFL2023
 
 # Lee parámetros
 l = len(sys.argv)
 
 def uso():
-  print(f"USO: {sys.argv[0]} N TAM_POBLACION TIEMPO PROB_CRUZA PROB_MUT [SEMILLA] [ARCHIVO]")
+  print(f"USO: {sys.argv[0]} ejemplar TAM_POBLACION TIEMPO PROB_CRUZA PROB_MUT [SEMILLA] [ARCHIVO]")
   print(f"Revisar el README para más información")
   exit(1)
 
-if l in range(6,9):
-  try:
-    N = int(sys.argv[1])
-    tam_poblacion = int(sys.argv[2])
-    tiempo = int(sys.argv[3])
-    p_cruza = float(sys.argv[4])
-    p_mut = float(sys.argv[5])
-    semilla = None
-    archivo = None
-    if l == 7:
-      if sys.argv[6].isnumeric():
-        semilla = int(sys.argv[6])
-      else:
-        archivo = sys.argv[6]
-    if l == 8:
-      semilla = int(sys.argv[6])
-      archivo = sys.argv[7]
-  except:
-    print("Error en algunos de los parámetros")
-    uso()
-    
-  # Ejecuta algoritmo
-  # alg = AlgoritmoGeneticoOX1(N)
-  alg = AlgoritmoGenetico(N)
-  res = alg.ejecutar(tam_poblacion, tiempo, p_cruza, p_mut, semilla)
-
-  if tiempo <= res["tiempo"]:
-    print("Tiempo límite alcanzado")
-  if res["es_optimo"]:
-    print("Solución óptima encontrada")
-  print("Semilla:", alg.semilla)
-  print("Solución encontrada:", res["solucion"])
-  print("Evaluación:", res["evaluacion"])
-  print("Generación:", res["generacion"])
-  print(f"Tiempo de ejecución: {res['tiempo']:.3f}")
-
-  if archivo is not None:
-    with open(archivo, "w") as f:
-      f.write(" ".join(map(str, res["solucion"])))
-    print("Solución guardada en", archivo)
-else:
+if l not in range(6,9):
   print("Error en el número de argumentos")
   uso()
+
+try:
+  ejemplar = sys.argv[1]
+  tam_poblacion = int(sys.argv[2])
+  tiempo = int(sys.argv[3])
+  p_cruza = float(sys.argv[4])
+  p_mut = float(sys.argv[5])
+  semilla = None
+  archivo = None
+  if l == 7:
+    if sys.argv[6].isnumeric():
+      semilla = int(sys.argv[6])
+    else:
+      archivo = sys.argv[6]
+  if l == 8:
+    semilla = int(sys.argv[6])
+    archivo = sys.argv[7]
+except:
+  print("Error en algunos de los parámetros")
+  uso()
+  
+# Ejecuta algoritmo
+try:
+  temporada = TemporadaNFL.leer_archivo(ejemplar)
+except Exception as err:
+  print("Hubo un error con la lectura del ejemplar", err, sep="\n")
+  raise
+  
+evl = EvaluacionNFL2023(temporada)
+alg = AlgoritmoGenetico(temporada, evl)
+res = alg.ejecutar(tam_poblacion, tiempo, p_cruza, p_mut, semilla)
+
+if tiempo <= res["tiempo"]:
+  print("Tiempo límite alcanzado")
+if res["es_optimo"]:
+  print("Solución óptima encontrada")
+print("Semilla:", alg.semilla)
+# print("Solución encontrada:", res["solucion"])
+print("Evaluación:", res["evaluacion"])
+print("Generación:", res["generacion"])
+print(f"Tiempo de ejecución: {res['tiempo']:.3f}")
+
+if archivo is not None:
+  with open(archivo, "w") as f:
+    f.write(temporada.guardar_solucion(res["solucion"]))
+  print("Solución guardada en", archivo)
 

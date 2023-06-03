@@ -54,6 +54,7 @@ if res["es_optimo"]:
   print("Solución óptima encontrada")
 print("Semilla:", alg.semilla)
 # print("Solución encontrada:", res["solucion"])
+print("Objetivo:", alg.max_eval)
 print("Evaluación:", res["evaluacion"])
 print("Generación:", res["generacion"])
 print(f"Tiempo de ejecución: {res['tiempo']:.3f}")

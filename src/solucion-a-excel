@@ -1,0 +1,207 @@
+#!/bin/env python3
+
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, NamedStyle, Font, Alignment, Side, Border
+from temporada import TemporadaNFL
+import numpy as np
+import sys
+
+if len(sys.argv) != 4:
+  print(f"USO: {sys.argv[0]} EJEMPLAR SOLUCION ARCHIVO")
+  exit(1)
+
+#
+# ESTILOS
+#
+
+font_black = Font(name="Arial", size=10, bold=True, color="000000")
+font_white = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+alignment = Alignment(horizontal="center", vertical="center")
+bd = Side(style="thin", color="000000")
+border = Border(left=bd, top=bd, right=bd, bottom=bd)
+
+MNF = NamedStyle(name="MNF")
+MNF.font = font_black
+MNF.border = border
+MNF.alignment = alignment
+MNF.fill = PatternFill(fill_type="solid", fgColor="92A8E4")
+
+SNF = NamedStyle(name="SNF")
+SNF.font = font_black
+SNF.border = border
+SNF.alignment = alignment
+SNF.fill = PatternFill(fill_type="solid", fgColor="FFC7CD")
+
+TNF = NamedStyle(name="TNF")
+TNF.font = font_black
+TNF.border = border
+TNF.alignment = alignment
+TNF.fill = PatternFill(fill_type="solid", fgColor="FCFC98")
+
+TDAY = NamedStyle(name="TDAY")
+TDAY.font = font_black
+TDAY.border = border
+TDAY.alignment = alignment
+TDAY.fill = PatternFill(fill_type="solid", fgColor="F9AC86")
+
+XMAS = NamedStyle(name="XMAS")
+XMAS.font = font_black
+XMAS.border = border
+XMAS.alignment = alignment
+XMAS.fill = PatternFill(fill_type="solid", fgColor="A9C892")
+
+WEEK = NamedStyle(name="WEEK")
+WEEK.font = font_white
+WEEK.border = border
+WEEK.alignment = alignment
+WEEK.fill = PatternFill(fill_type="solid", fgColor="1D840F")
+
+NONE = NamedStyle(name="NONE")
+NONE.font = font_black
+NONE.border = border
+NONE.alignment = alignment
+
+BYE = NamedStyle(name="BYE")
+BYE.font = font_white
+BYE.border = border
+BYE.alignment = alignment
+BYE.fill = PatternFill(fill_type="solid", fgColor="7F807E")
+
+colores_equipos = [
+  ("F71C06", "FFFFFF"),
+  ("020202", "FFFFFF"),
+  ("D69CFF", "000000"),
+  ("0100FB", "FF0000"),
+  ("00CEFC", "FFFFFF"),
+  ("0A3400", "FF0000"),
+  ("F96B00", "000000"),
+  ("8A3A15", "FFFFFF"),
+  ("C0C0C0", "0000F0"),
+  ("070276", "D5863D"),
+  ("0000BA", "EEEEEE"),
+  ("147B05", "EEEEEE"),
+  ("060175", "FFFFFF"),
+  ("0202FA", "FFFFFF"),
+  ("00070B", "75DAFF"),
+  ("EB1C00", "FAFA00"),
+  ("03017E", "FAFA00"),
+  ("0304E8", "FAFA00"),
+  ("030305", "A7A7A7"),
+  ("088277", "D6773E"),
+  ("7F027A", "FAFA00"),
+  ("65659B", "C5C8FF"),
+  ("F8C919", "2E1600"),
+  ("0000B5", "FFFFFF"),
+  ("3F9666", "FFFFFF"),
+  ("1D7D7F", "FFFFFF"),
+  ("000000", "FAFA00"),
+  ("0002FE", "FFFFFF"),
+  ("FD0500", "FAFA00"),
+  ("F6CE1C", "FF0000"),
+  ("97CDF8", "FFFFFF"),
+  ("973500", "FAFA00")
+]
+
+#
+# Inicializacion de componentes
+#
+
+wb = Workbook()
+ws = wb.active
+temporada = TemporadaNFL.leer_archivo(sys.argv[1])
+solucion = temporada.leer_solucion(sys.argv[2])
+
+estilos = [MNF, SNF, TNF, TDAY, XMAS, NONE]
+estilo_horarios = {temporada.horarios[v.name] : v for v in estilos}
+
+equipos_ordenados = sorted(temporada.equipos, key=lambda v: v["acronimo"])
+equipos_orden = {equipo["acronimo"]:ind 
+                 for ind, equipo in enumerate(temporada.equipos)}
+
+#
+# ESTILO GENERAL SEMANAS
+#
+
+for semana in range(1, temporada.num_semanas+1):
+  cell = ws.cell(row=1, column=semana+1)
+  cell.value = f"WK {semana}"
+  cell.style = WEEK
+
+ws.cell(row=1, column=1).style = WEEK
+
+#
+# ESTILO EQUIPOS
+#
+
+for fila, equipo in enumerate(equipos_ordenados):
+  cell = ws.cell(row=fila+2, column=1)
+  cell.value = equipo["acronimo"]
+  cell.font = Font(
+    name="Arial", size=10, bold=True, color=colores_equipos[fila][1])
+  cell.fill = PatternFill(fill_type="solid", fgColor=colores_equipos[fila][0])
+  cell.alignment = alignment
+
+# 
+# SIGNIFICADO DE COLORES
+#
+
+datos_colores = [
+  ("SATURDAY", "F4AE82", 2, None),
+  ("SUNDAY", "FFFFFF", 2, None),
+  ("SNF/NBC", None, 2, SNF),
+  ("MNF/ESPN/ABC", None, 2, MNF),
+  ("TNF", None, 1, TNF),
+  ("NFLN", "9AFD9B", 1, None),
+  ("THANKSGIVING", None, 2, TDAY),
+  ("BLACK FRIDAY", "000000", 2, None),
+  ("CHRISTMAS DAY", None, 2, XMAS),
+  ("INTERNATIONAL", "C366FA", 2, None)
+]
+
+fila, col = fila + 3, 2
+
+ws.cell(row=fila, column=1).fill = PatternFill(
+  fill_type="solid", fgColor="AFAAA9")
+ws.cell(row=fila, column=1).border = border
+
+for valor, color, num_cols, stilo in datos_colores:
+  ws.merge_cells(
+    start_row=fila, start_column=col, end_row=fila, end_column=col+num_cols-1)
+  cell = ws.cell(row=fila, column=col)
+  cell.value = valor
+  col += num_cols
+  if stilo is not None:
+    cell.style = stilo
+  else:
+    cell.fill = PatternFill(fill_type="solid", fgColor=color)
+    cell.font = font_white if color == "000000" else font_black
+    cell.alignment = alignment
+    cell.border = border
+
+#
+# PARTIDOS
+#
+
+for fila, equipo in enumerate(equipos_ordenados):
+  ind = equipos_orden[equipo["acronimo"]]
+  assert temporada.equipos[ind] == equipo, "error en los indices"
+  partidos = solucion[ind]
+  for semana, (partido, horario) in enumerate(partidos):
+    cell = ws.cell(row=fila+2, column=semana+2)
+    if partido == temporada.bye:
+      cell.value = "BYE"
+      cell.style = BYE
+    else:
+      local = temporada.partidos[partido]["local"]
+      visitante = temporada.partidos[partido]["visitante"]
+      contra = local if visitante == ind else visitante 
+      extra = "at " if ind == visitante else ""
+      cell.value = extra + temporada.equipos[contra]["acronimo"] 
+      cell.style = estilo_horarios[horario]
+
+#
+# GUARDAR EL ARCHVIO
+#
+
+wb.save(sys.argv[2])
+

@@ -203,5 +203,5 @@ for fila, equipo in enumerate(equipos_ordenados):
 # GUARDAR EL ARCHVIO
 #
 
-wb.save(sys.argv[2])
+wb.save(sys.argv[3])
 

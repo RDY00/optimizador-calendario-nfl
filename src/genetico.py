@@ -65,7 +65,7 @@ class AlgoritmoGenetico:
       ps1 = np.sort(partidos)
       ps2 = np.sort(self.ejemplar.equipos[equipo]["partidos"] + [self.ejemplar.bye])
       if np.any(ps1 != ps2):
-        print(f"Error {equipo=} {ps1=} {ps2=}")
+        print(f"Error equipo = {equipo} ps1 = {ps1} ps2 = {ps2}")
         bien = False
 
     for semana in range(self.ejemplar.num_semanas):
@@ -75,7 +75,7 @@ class AlgoritmoGenetico:
       hs1 = np.sort(horarios)
       hs2 = np.sort(solucion[:,semana,1])
       if np.any(hs1 != hs2):
-        print(f"Error {semana=} {hs1=} {hs2=}")
+        print(f"Error semana = {semana} hs1 = {hs1} hs2 = {hs2}")
         bien = False
 
     return bien
@@ -110,6 +110,8 @@ class AlgoritmoGenetico:
       self.rng.shuffle(partidos)
       sol[equipo,:,0] = partidos
 
+    self.repara_filas(sol)
+
     # Rellenamos columnas
     for semana in range(self.ejemplar.num_semanas):
       # Horarios esterales de la semana aleatorios
@@ -119,10 +121,80 @@ class AlgoritmoGenetico:
       self.rng.shuffle(horarios)
       sol[:,semana,1] = horarios
 
+    self.repara_columnas(sol)
+
     return {
       "solucion" : sol,
       "evaluacion" : self.evalua_solucion(sol)
     }
+
+  def repara_filas(self, solucion: np.ndarray) -> None:
+    """ Repara la solucion tanto como sea posible en los equipos
+
+    Recorre todas las filas de arriba a abajo para asegurarse de la mayoría
+    de los partidos estén correctamente marcado en ambos equipos que los juegan.
+
+    Parámetros
+    ----------
+    solucion : np.ndarray
+      Solución a reparar
+    """
+    # Diccionario para tener acceso O(1)
+    orden_partidos = [{} for i in range(self.ejemplar.num_equipos)]
+
+    for equipo, juegos in enumerate(solucion):
+      for semana, (partido, _) in enumerate(juegos):
+        orden_partidos[equipo][partido] = semana
+
+    for _ in range(3):
+      for equipo, partidos in enumerate(solucion):
+        for semana, (partido, _) in enumerate(partidos):
+          contra = self.ejemplar.equipo_contra(equipo, partido)
+          if contra == None: continue
+          partido_contra = solucion[contra,semana,0]
+          if partido_contra == partido: continue
+          semana_contra = orden_partidos[contra][partido]
+          solucion[contra,semana,0] = partido
+          solucion[contra,semana_contra,0] = partido_contra
+          orden_partidos[contra][partido] = semana
+          orden_partidos[contra][partido_contra] = semana_contra
+
+  def repara_columnas(self, solucion: np.ndarray) -> None:
+    """ Repara la solucion tanto como sea posible en los horarios
+
+    Recorre todas las columnas para asegurase de que, en donde los partidos
+    están bien posicionados, se compartan los horarios.
+
+    Parámetros
+    ----------
+    solucion : np.ndarray
+      Solución a reparar
+    """
+    for semana in range(solucion.shape[1]):
+      # Cache para los horarios de la semana
+      horarios_cache = {}
+      for equipo in range(solucion.shape[0]):
+        h = solucion[equipo,semana,1]
+        if h in horarios_cache:
+          horarios_cache[h].add(equipo)
+        else:
+          horarios_cache[h] = {equipo}
+
+      for equipo in range(solucion.shape[0]):
+        partido = solucion[equipo,semana,0]
+        contra = self.ejemplar.equipo_contra(equipo, partido)
+        if contra == None: continue
+        partido_contra = solucion[contra,semana,0]
+        if partido != partido_contra: continue
+        h1 = solucion[equipo,semana,1]
+        h2 = solucion[contra,semana,1]
+        if h1 == h2: continue
+        horarios_cache[h1].discard(equipo)
+        horarios_cache[h2].discard(contra)
+        cambio = horarios_cache[h1].pop()
+        horarios_cache[h2].add(cambio)
+        solucion[contra,semana,1] = h1
+        solucion[cambio,semana,1] = h2
 
   def cruza_filas(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
     """ Aplica cruza por filas entre los padres
@@ -149,51 +221,16 @@ class AlgoritmoGenetico:
 
     hijo1 = sol1.copy()
     hijo2 = sol2.copy()
-     
+
     # Copiamos todas esas filas
-    hijo1[m:n] = sol2[m:n]
-    hijo2[m:n] = sol1[m:n]
-    
-    # Reparamos columnas
-    for s in range(self.ejemplar.num_semanas):
-      # Datos del hijo 1 y 2
-      h1 = sol1[:,s,1]
-      r1 = {k:0 for k in set(h1)}
-      h2 = sol2[:,s,1]
-      r2 = {k:0 for k in set(h2)}
-      for v1, v2 in zip(h1,h2):
-        r1[v1] += 1
-        r2[v2] += 1
+    hijo1[m:n,:,0] = sol2[m:n,:,0]
+    hijo2[m:n,:,0] = sol1[m:n,:,0]
 
-      # Obtenemos los índices de lo sustituido
-      for e in range(m,n):
-        r1[sol2[e,s,1]] -= 1
-        r2[sol1[e,s,1]] -= 1
-
-      # Corregimos los indices con OX1
-      ind1 = 0
-      ind2 = 0
-      for e in range(m):
-        while r1[h1[ind1]] == 0:
-          ind1 += 1
-        hijo1[e,s,1] = h1[ind1]
-        r1[h1[ind1]] -= 1
-
-        while r2[h2[ind2]] == 0:
-          ind2 += 1
-        hijo2[e,s,1] = h2[ind2]
-        r2[h2[ind2]] -= 1
-        
-      for e in range(n,limite):
-        while r1[h1[ind1]] == 0:
-          ind1 += 1
-        hijo1[e,s,1] = h1[ind1]
-        r1[h1[ind1]] -= 1
-
-        while r2[h2[ind2]] == 0:
-          ind2 += 1
-        hijo2[e,s,1] = h2[ind2]
-        r2[h2[ind2]] -= 1
+    # False de reparación
+    self.repara_filas(hijo1)
+    self.repara_filas(hijo2)
+    self.repara_columnas(hijo1)
+    self.repara_columnas(hijo2)
 
     return hijo1, hijo2
 
@@ -339,8 +376,8 @@ class AlgoritmoGenetico:
 
       # Mutación
       if self.rng.random() < self.p_mutacion:
-        self.muta_cols(h1)
-        self.muta_cols(h2)
+        self.muta_filas(h1)
+        self.muta_filas(h2)
 
       # Agregar
       nueva_poblacion.append({
@@ -371,7 +408,7 @@ class AlgoritmoGenetico:
     self.cdf = np.cumsum(probs)
 
   def ejecutar(self, tam_poblacion: int = 50, t_limite: int = 60,
-      p_cruza: float = 0.8, p_mutacion: float = 0.1, semilla: int = None,
+      p_cruza: float = 0.8, p_mutacion: float = 0.01, semilla: int = None,
       muestra_cada: int = 100, grafica_cada: int = 100) -> dict:
     """ Ejecuta el algoritmo genético con los parámetros dados
 
@@ -389,7 +426,7 @@ class AlgoritmoGenetico:
       Probabilidad de aplicar el operador de cruza a dos padres.
       Por defecto es 0.9
     p_mutacion : float
-      Probabilidad de mutar a cada invidivuo. Por defectto es 0.1
+      Probabilidad de mutar a cada invidivuo. Por defectto es 0.01
     semilla : int
       Semilla para los valores aleatorios, si es None se usa time.time().
       Por defecto es None.

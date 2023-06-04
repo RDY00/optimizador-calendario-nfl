@@ -11,9 +11,9 @@ ITERACIONES = 1
 P_MUTACION = 0.01
 P_CRUZA = 0.9
 TAM_POBLACION = 100
-T_LIMITE = 3600 # segundos
-MUESTRA_CADA = 100
-GRAFICA_CADA = 100
+T_LIMITE = 600 # 3600 # segundos
+MUESTRA_CADA = 10
+GRAFICA_CADA = 10
 EJEMPLAR = "../data/temporada2023.txt"
 
 # Las semillas estás fijas, se pueden volver aleatorias quitando el 42 (semilla)

@@ -7,13 +7,13 @@ from temporada import TemporadaNFL
 from evaluacion.evaluacion2023 import EvaluacionNFL2023
 import numpy as np
 
-ITERACIONES = 1
+ITERACIONES = 5
 P_MUTACION = 0.01
 P_CRUZA = 0.9
 TAM_POBLACION = 100
-T_LIMITE = 600 # 3600 # segundos
-MUESTRA_CADA = 10
-GRAFICA_CADA = 10
+T_LIMITE = 3600 # 3600 # segundos
+MUESTRA_CADA = 100
+GRAFICA_CADA = 100
 EJEMPLAR = "../data/temporada2023.txt"
 
 # Las semillas estás fijas, se pueden volver aleatorias quitando el 42 (semilla)
@@ -36,7 +36,7 @@ def guardar_datos() -> None:
   temporada = TemporadaNFL.leer_archivo(EJEMPLAR)
   evaluacion = EvaluacionNFL2023(temporada)
   problema = AlgoritmoGenetico(temporada, evaluacion)
-  for i in range(ITERACIONES):
+  for i in range(1, ITERACIONES+1):
     resultado = problema.ejecutar(
       TAM_POBLACION, T_LIMITE, P_CRUZA, P_MUTACION, SEMILLAS[i],
       MUESTRA_CADA, GRAFICA_CADA)

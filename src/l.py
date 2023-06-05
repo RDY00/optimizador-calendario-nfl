@@ -29,10 +29,10 @@ print(elv.analiza_solucion(datos["solucion"]))
 with open(sys.argv[2], "a") as f:
   f.write(temporada.guardar_solucion(datos["solucion"]))
 
-# fig, ax = plt.subplots()
-# ax.plot(datos["optimos"])
-# ax.set_title("Evaluación del valor óptimo")
-# ax.set_ylabel("Evaluación")
-# ax.set_xlabel("Generación")
-# fig.savefig("grafia.png", bbox_inches="tight")
+fig, ax = plt.subplots()
+ax.plot(datos["optimos"])
+ax.set_title("Evaluación del valor óptimo")
+ax.set_ylabel("Evaluación")
+ax.set_xlabel("Generación")
+fig.savefig("grafia.png", bbox_inches="tight")
 

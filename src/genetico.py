@@ -196,60 +196,6 @@ class AlgoritmoGenetico:
 
     return hijo1, hijo2
 
-  def cruza_cols(self, sol1: np.ndarray, sol2: np.ndarray) -> tuple:
-    """ Aplica cruza por columnas entre los padres
-    
-    Para un hijo se toma una sección de columnas de uno de los padres y se
-    copia, el resto se copia del otro padre. Los horarios no requieren
-    arreglos, para las columnas se utiliza OX1 como algoritmo de cruza.
-
-    Parámetros
-    ----------
-    sol1 : np.ndarray
-      Primer padre para el cruce
-    sol2 : np.ndarray
-      Segundo padre para el cruce
-
-    Devuelve
-    --------
-    tuple : Tupla con los dos hijos generados
-    """
-    limite = self.ejemplar.num_semanas
-    # Rango que se copia, m < n
-    m = self.rng.integers(limite-1)
-    n = self.rng.integers(m+1, limite) + 1
-
-    hijo1 = sol1.copy()
-    hijo2 = sol2.copy()
-     
-    # Copiamos todas esas filas
-    hijo1[:,m:n] = sol2[:,m:n]
-    hijo2[:,m:n] = sol1[:,m:n]
-    
-    # Reparamos columnas
-    for e in range(self.ejemplar.num_equipos):
-      ind1, ind2 = {}, {}
-      # Sustituimos la seccion que se mantiene en los hijos
-      for s in range(m,n):
-        ind1[sol2[e,s,0]] = sol1[e,s,0]
-        ind2[sol1[e,s,0]] = sol2[e,s,0]
-
-      # Corregimos los indices de la izquierda
-      for s in range(m):
-        while hijo1[e,s,0] in ind1:
-          hijo1[e,s,0] = ind1[hijo1[e,s,0]]
-        while hijo2[e,s,0] in ind2:
-          hijo2[e,s,0] = ind2[hijo2[e,s,0]]
-
-      # Corregimos los indices de la derecha
-      for s in range(n,limite):
-        while hijo1[e,s,0] in ind1:
-          hijo1[e,s,0] = ind1[hijo1[e,s,0]]
-        while hijo2[e,s,0] in ind2:
-          hijo2[e,s,0] = ind2[hijo2[e,s,0]]
-
-    return hijo1, hijo2
-
   def muta_filas(self, solucion: np.ndarray) -> np.ndarray:
     """ Muta una solución por filas
 
@@ -266,28 +212,6 @@ class AlgoritmoGenetico:
     
     solucion[equipo,semanas[0],0], solucion[equipo,semanas[1],0] = \
       solucion[equipo,semanas[1],0], solucion[equipo,semanas[0],0]
-
-  def muta_cols(self, solucion: np.ndarray) -> None:
-    """ Muta una solución por columnas
-
-    Intercambia los horarios de dos partidos de una semana aleatoria, luego
-    repara la solución.
-
-    Parámetros
-    ----------
-    solucion : np.ndarray
-      Solución a mutar
-    """
-    # Obtenemos semana y rangos aleatorios
-    semana = self.rng.integers(solucion.shape[1])
-    limite = self.ejemplar.num_equipos
-    m = self.rng.integers(limite-1)
-    n = self.rng.integers(m+1, limite) + 1
-    
-    # Insertamos y recorremos
-    tmp = solucion[n-1,semana,1]
-    for e in range(m,n):
-      solucion[e,semana,1], tmp = tmp, solucion[e,semana,1]
 
   def selecciona_padres(self, num_padres: int = 2) -> list:
     """ Selecciona NUM_PADRES padres para la nueva generación

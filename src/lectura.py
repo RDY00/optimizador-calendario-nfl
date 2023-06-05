@@ -8,7 +8,7 @@ from pathlib import Path
 
 ITERACIONES = 5
 EJEMPLAR = "../data/temporada2023.txt"
-COLUMNAS = ["Ejemplar", "Repeticiones", "Promedio Generaciones", "Porcentaje de Exito", "Tiempo"]
+COLUMNAS = ["Ejemplar", "Repeticiones", "Promedio Generaciones", "Promedio", "Mejor", "Peor", "Porcentaje de Exito", "Tiempo"]
 
 RUTA = Path.cwd() / "data"
 # RUTA.mkdir(exist_ok=True)
@@ -33,6 +33,7 @@ def resultados() -> None:
   generaciones = 0
   tiempos = 0.0
   exitos = 0
+  evaluaciones = []
   promedio = []
   mejor = []
   mejor_eval = float("-inf")
@@ -44,6 +45,7 @@ def resultados() -> None:
       aux = json.load(f)
       generaciones += aux["generacion"]
       tiempos += aux["tiempo"]
+      evaluaciones.append(aux["evaluacion"])
       if(aux["es_optimo"]): exitos += 1
       aux_eval = aux["evaluacion"] - aux["generacion"]
       if aux_eval > mejor_eval:
@@ -55,8 +57,17 @@ def resultados() -> None:
   aux_prom = np.array([v + v[-1:]*(l-len(v)) for v in promedio]).sum(axis=0) / len(promedio)
   mejor = mejor + mejor[-1:]*(l-len(mejor))
   graficas(aux_prom, mejor)
-  
-  fila = (EJEMPLAR, ITERACIONES, generaciones/ITERACIONES, (exitos/ITERACIONES)*100, tiempos/ITERACIONES)
+
+  fila = (
+    EJEMPLAR,
+    ITERACIONES,
+    generaciones/ITERACIONES,
+    sum(evaluaciones)/ITERACIONES,
+    max(evaluaciones), min(evaluaciones),
+    (exitos/ITERACIONES)*100,
+    tiempos/ITERACIONES
+  )
+
   resultado.append(fila)
 
   print("Listo UwU")

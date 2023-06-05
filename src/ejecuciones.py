@@ -7,11 +7,11 @@ from temporada import TemporadaNFL
 from evaluacion.evaluacion2023 import EvaluacionNFL2023
 import numpy as np
 
-ITERACIONES = 1
+ITERACIONES = 5
 P_MUTACION = 0.01
 P_CRUZA = 0.9
 TAM_POBLACION = 100
-T_LIMITE = 14400 # 3600 # segundos
+T_LIMITE = 2400 # 3600 # segundos
 MUESTRA_CADA = 100
 GRAFICA_CADA = 100
 EJEMPLAR = "../data/temporada2023.txt"

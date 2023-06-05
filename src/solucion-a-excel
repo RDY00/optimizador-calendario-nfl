@@ -167,16 +167,22 @@ ws.cell(row=fila, column=1).border = border
 for valor, color, num_cols, stilo in datos_colores:
   ws.merge_cells(
     start_row=fila, start_column=col, end_row=fila, end_column=col+num_cols-1)
-  cell = ws.cell(row=fila, column=col)
-  cell.value = valor
+  c1 = ws.cell(row=fila, column=col)
+  c2 = ws.cell(row=fila, column=col+num_cols-1)
+  c1.value = valor
   col += num_cols
   if stilo is not None:
-    cell.style = stilo
+    c1.style = stilo
+    c2.style = stilo
   else:
-    cell.fill = PatternFill(fill_type="solid", fgColor=color)
-    cell.font = font_white if color == "000000" else font_black
-    cell.alignment = alignment
-    cell.border = border
+    c1.fill = PatternFill(fill_type="solid", fgColor=color)
+    c1.font = font_white if color == "000000" else font_black
+    c1.alignment = alignment
+    c1.border = border
+    c2.fill = PatternFill(fill_type="solid", fgColor=color)
+    c2.font = font_white if color == "000000" else font_black
+    c2.alignment = alignment
+    c2.border = border
 
 #
 # PARTIDOS

@@ -60,7 +60,7 @@ class Regla(ABC):
     return e * self.penalizacion if self.es_dura else e
 
   @abstractmethod
-  def evalua(solucion: np.ndarray) -> int:
+  def evalua(self, solucion: np.ndarray) -> int:
     """ Evalua la solucion en base a la regla
 
     Parámetros

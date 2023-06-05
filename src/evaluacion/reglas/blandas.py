@@ -9,7 +9,7 @@ class NoTresJuegosFuera(Regla):
 
   @property
   def max_val(self) -> int:
-    return self.ejemplar.num_equipos
+    return self.ejemplar.num_equipos * 6
     
   def evalua(self, solucion: np.ndarray) -> int:
     penalizacion = 0

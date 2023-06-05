@@ -27,7 +27,7 @@ print("Análisis:\n")
 print(elv.analiza_solucion(datos["solucion"]))
 
 with open(sys.argv[2], "a") as f:
-  temporada.guardar_solucion(datos["solucion"])
+  f.write(temporada.guardar_solucion(datos["solucion"]))
 
 # fig, ax = plt.subplots()
 # ax.plot(datos["optimos"])

@@ -103,7 +103,7 @@ class NoMasDeDosHusosParaTNF(Regla):
 
   @property
   def max_val(self) -> int:
-    return self.ejemplar.num_semanas * 13
+    return self.ejemplar.num_equipos * 15
     
   def evalua(self, solucion: np.ndarray) -> int:
     penalizacion = 0

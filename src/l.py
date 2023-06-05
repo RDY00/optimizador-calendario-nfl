@@ -7,7 +7,7 @@ from evaluacion.evaluacion2023 import EvaluacionNFL2023
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open("data/ejecucuion_0.json") as f:
+with open("data/ejecucuion_3.json") as f:
   datos = json.load(f)
 
 datos["solucion"] = np.array(datos["solucion"], dtype=int).reshape((32,18,2))

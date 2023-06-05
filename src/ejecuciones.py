@@ -7,11 +7,11 @@ from temporada import TemporadaNFL
 from evaluacion.evaluacion2023 import EvaluacionNFL2023
 import numpy as np
 
-ITERACIONES = 5
+ITERACIONES = 1
 P_MUTACION = 0.01
 P_CRUZA = 0.9
 TAM_POBLACION = 100
-T_LIMITE = 2700 # 3600 # segundos
+T_LIMITE = 14400 # 3600 # segundos
 MUESTRA_CADA = 100
 GRAFICA_CADA = 100
 EJEMPLAR = "../data/temporada2023.txt"
@@ -38,10 +38,10 @@ def guardar_datos() -> None:
   problema = AlgoritmoGenetico(temporada, evaluacion)
   for i in range(1, ITERACIONES+1):
     resultado = problema.ejecutar(
-      TAM_POBLACION, T_LIMITE, P_CRUZA, P_MUTACION, SEMILLAS[i],
+      TAM_POBLACION, T_LIMITE, P_CRUZA, P_MUTACION, SEMILLAS[i-1],
       MUESTRA_CADA, GRAFICA_CADA)
     resultado["solucion"] = list(map(int, resultado["solucion"].flatten()))
-    with open(RUTA / f"ejecucuion_{i}.json", "w") as f:
+    with open(RUTA / f"ejecucion_{i}.json", "w") as f:
       json.dump(resultado, f, indent=2)
     print(f"Datos del ejemplar {i} guardados UwU", end="\n\n")
     

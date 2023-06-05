@@ -6,10 +6,11 @@ class HorarioFactible(Regla):
   """ Verifica que el horarios sea factible/válido """
   def __init__(self, ejemplar: TemporadaNFL) -> None:
     super().__init__(ejemplar, True)
+    self.factor = 100
 
   @property
   def max_val(self) -> int:
-    return 10 * len(self.ejemplar.partidos)
+    return self.factor * len(self.ejemplar.partidos)
 
   def evalua(self, solucion: np.ndarray) -> int:
     partidos_mal = set()
@@ -22,7 +23,7 @@ class HorarioFactible(Regla):
         if solucion[local,semana,0] != partido or \
             solucion[visitante,semana,0] != partido:
           partidos_mal.add(partido)
-    return 10 * len(partidos_mal)
+    return self.factor * len(partidos_mal)
 
 class PartidosTDAY(Regla):
   """ Revisa que DET y DAL juegen en acción de gracias """

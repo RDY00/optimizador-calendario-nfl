@@ -167,6 +167,71 @@ class TemporadaNFL:
 
     return [self.horarios[v] for v in horarios]
 
+  def verifica_solucion(self, solucion: np.ndarray) -> bool:
+    """ Verifica que una solución sea válida
+
+    Se considera válida una solución que cumple:
+    * La fila i es una permutación de los 17 partidos y el BYE del equipo i.
+    * La columnas j es una permutación de los posibles horarios de la semana
+      j+1 y todos los horarios aparecen en pares.
+
+    ESTA FUNCIÓN ES PARA PRUEBAS, NO SE USA EN EL ALGORITMO
+
+    Parámetros
+    ----------
+    solucion : np.ndarray
+      Solución a verificar
+
+    Devuelve
+    bool : True si la solución es correcta, False en otro caso
+    """
+    bien = True
+    for equipo, partidos in enumerate(solucion[:,:,0]):
+      ps1 = np.sort(partidos)
+      ps2 = np.sort(self.equipos[equipo]["partidos"] + [self.bye])
+      if np.any(ps1 != ps2):
+        print(f"Error equipo = {equipo} ps1 = {ps1} ps2 = {ps2}")
+        bien = False
+
+    for semana in range(self.num_semanas):
+      horarios = self.horarios_semana(semana) * 2
+      horarios += [self.horarios["NONE"]] * \
+                    (self.num_equipos - len(horarios))
+      hs1 = np.sort(horarios)
+      hs2 = np.sort(solucion[:,semana,1])
+      if np.any(hs1 != hs2):
+        print(f"Error semana = {semana} hs1 = {hs1} hs2 = {hs2}")
+        bien = False
+
+    return bien
+
+  def verifica_factibilidad(self, solucion: np.ndarray):
+    if not self.verifica_solucion(solucion):
+      return False
+
+    res = True
+    
+    for equipo, partidos in enumerate(solucion):
+      for semana, (partido, horario) in enumerate(partidos):
+        if partido == self.bye: continue
+        contra = self.equipo_contra(equipo, partido)
+        partido_contra = solucion[contra,semana,0]
+        horario_contra = solucion[contra,semana,1]
+        if partido_contra != partido:
+          res = False
+          print(f"Error en semana {semana}",
+                f"en equipos {equipo} y {contra}",
+                f"con los partidos {partido} y {partido_contra}")
+        elif horario != horario_contra:
+          res = False
+          print(f"Error en semana {semana}",
+                f"en equipos {equipo} y {contra}",
+                f"con el partido {partido}",
+                f"por los horarios {horario} {horario_contra}")
+
+    return res
+
+
   def equipo_contra(self, equipo: int, partido: int) -> int:
     """ Devuelve el equipo contrario de un partido
 

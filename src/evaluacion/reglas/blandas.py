@@ -53,12 +53,13 @@ class TodosHorarioEstelar(Regla):
     return self.ejemplar.num_equipos
     
   def evalua(self, solucion: np.ndarray) -> int:
-    return sum(1 for partidos in solucion if np.all(partidos[:,1] == self.ejemplar.horarios["NONE"]))
+    return sum(1 for partidos in solucion
+               if np.all(partidos[:,1] == self.ejemplar.horarios["NONE"]))
     
 class NoByesTempranosConsecutivos(Regla):
   """ Penaliza por equipos con dos byes  tempranos seguidos """
   def __init__(self, ejemplar: TemporadaNFL) -> None:
-    super().__init__(ejemplar, True)
+    super().__init__(ejemplar, False)
 
   @property
   def max_val(self) -> int:
@@ -74,7 +75,7 @@ class NoByesTempranosConsecutivos(Regla):
 class JuegosDivisionalesAlFinal(Regla):
   """ Penaliza por juegos divisionales al inicio de temporada """
   def __init__(self, ejemplar: TemporadaNFL) -> None:
-    super().__init__(ejemplar, True)
+    super().__init__(ejemplar, False)
 
   @property
   def max_val(self) -> int:
@@ -91,5 +92,36 @@ class JuegosDivisionalesAlFinal(Regla):
         dv = self.ejemplar.equipos[self.ejemplar.partidos[
           partido]["visitante"]]["division"]
       if dl == dv: penalizacion += 1
+    return penalizacion
+
+class NoMasDeDosHusosParaTNF(Regla):
+  """ Penaliza por equipos que tienen que viajar mas de dos husos horarios para
+  un partido de TNF """
+  def __init__(self, ejemplar: TemporadaNFL) -> None:
+    super().__init__(ejemplar, False)
+    self.orden_huso = ("PST", "MST", "CST", "EST")
+
+  @property
+  def max_val(self) -> int:
+    return self.ejemplar.num_semanas * 13
+    
+  def evalua(self, solucion: np.ndarray) -> int:
+    penalizacion = 0
+    for equipo, partidos in enumerate(solucion):
+      for semana, (partido, horario) in enumerate(partidos):
+        if semana in (self.ejemplar.semanas_sin_horario) \
+            or semana == 0 \
+            or horario != self.ejemplar.horarios["TNF"] \
+            or partido == self.ejemplar.bye:
+          continue
+        huso_actual = self.ejemplar.estadios[
+          self.ejemplar.partidos[partido]["estadio"]]["huso"]
+        partido_anterior = solucion[equipo,semana-1,1]
+        huso_anterior = self.ejemplar.estadios[
+          self.ejemplar.partidos[partido_anterior]["estadio"]]["huso"]
+        dif_huso = abs(self.orden_huso.index(huso_actual) - \
+          self.orden_huso.index(huso_anterior))
+        if dif_huso > 2:
+          penalizacion +=1
     return penalizacion
 

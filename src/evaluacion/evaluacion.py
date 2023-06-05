@@ -53,12 +53,14 @@ class EvaluacionNFL(ABC):
       Solución a analizar
     """
     val = 0
-    print(f"{'NOMBRE':30} PENALIZACION/TOTAL")
+    print(f"{'NOMBRE':30} DURA/BLANDA   PENALIZACION/TOTAL")
     for r in self.reglas:
       e = r(solucion)
-      print(f"{r.nombre:30} {e}/{r.max_eval}")
+      db = "DURA" if r.es_dura else "BLANDA"
+      print(f"{r.nombre:30} {db:13} {e}/{r.max_eval}")
       val += e
 
     val = self.max_eval - val
+    print("---------")
     print(f"EVALUACION/TOTAL: {val}/{self.max_eval}")
 

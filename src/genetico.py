@@ -42,44 +42,6 @@ class AlgoritmoGenetico:
     self.semilla = None
     self.rng = None
 
-  def verifica_solucion(self, solucion: np.ndarray) -> bool:
-    """ Verifica que una solución sea válida
-
-    Se considera válida una solución que cumple:
-    * La fila i es una permutación de los 17 partidos y el BYE del equipo i.
-    * La columnas j es una permutación de los posibles horarios de la semana
-      j+1 y todos los horarios aparecen en pares.
-
-    ESTA FUNCIÓN ES PARA PRUEBAS, NO SE USA EN EL ALGORITMO
-
-    Parámetros
-    ----------
-    solucion : np.ndarray
-      Solución a verificar
-
-    Devuelve
-    bool : True si la solución es correcta, False en otro caso
-    """
-    bien = True
-    for equipo, partidos in enumerate(solucion[:,:,0]):
-      ps1 = np.sort(partidos)
-      ps2 = np.sort(self.ejemplar.equipos[equipo]["partidos"] + [self.ejemplar.bye])
-      if np.any(ps1 != ps2):
-        print(f"Error equipo = {equipo} ps1 = {ps1} ps2 = {ps2}")
-        bien = False
-
-    for semana in range(self.ejemplar.num_semanas):
-      horarios = self.ejemplar.horarios_semana(semana) * 2
-      horarios += [self.ejemplar.horarios["NONE"]] * \
-                    (self.ejemplar.num_equipos - len(horarios))
-      hs1 = np.sort(horarios)
-      hs2 = np.sort(solucion[:,semana,1])
-      if np.any(hs1 != hs2):
-        print(f"Error semana = {semana} hs1 = {hs1} hs2 = {hs2}")
-        bien = False
-
-    return bien
-
   def inicializa_poblacion(self) -> None:
     """ Inicializa la poblacion inicial con TAM_POBLACION individuos
 
@@ -479,7 +441,9 @@ class AlgoritmoGenetico:
           optimos.append(self.mejor["evaluacion"])
           promedios.append(self.total_eval / self.tam_poblacion)
         if generacion % muestra_cada == 0:
-            print(f"Generacion: {generacion} Evaluacion: {self.mejor['evaluacion']} Objetivo: {self.max_eval}")
+            print(f" Generacion: {generacion}",
+                  f"Evaluacion: {self.mejor['evaluacion']}",
+                  f"Objetivo: {self.max_eval}")
         t_actual = time.time()
         bar.update(1)
 
@@ -494,4 +458,5 @@ class AlgoritmoGenetico:
       "optimos" : optimos,
       "promedios" : promedios 
     }
+
 

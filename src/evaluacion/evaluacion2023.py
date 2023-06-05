@@ -21,11 +21,12 @@ class EvaluacionNFL2023(EvaluacionNFL):
       ByeEnSemanasValidas,
       NoMasDeSeisByes,
       NoEstelaresEnBye,
-      # Blandas
+      #Blandas
       NoTresJuegosFuera,
       CalificacionHorarios,
       TodosHorarioEstelar,
       NoByesTempranosConsecutivos,
-      JuegosDivisionalesAlFinal
+      JuegosDivisionalesAlFinal,
+      NoMasDeDosHusosParaTNF
     ]]
 

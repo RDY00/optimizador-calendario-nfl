@@ -39,8 +39,8 @@ class TemporadaNFL:
     self.equipos = equipos
     self.partidos = partidos
     self.estadios = estadios
-    self.navidad = navidad
-    self.thanksgiving = thanksgiving
+    self.navidad = (navidad[0]-1, navidad[1])
+    self.thanksgiving = thanksgiving - 1
     # NONE - Horario normal / no definido
     # {M,T,S}NF - {Monday,Thursday,Sunday} Night Football
     # XMAS - Christmas

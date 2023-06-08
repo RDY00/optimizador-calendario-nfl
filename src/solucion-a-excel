@@ -140,6 +140,7 @@ for fila, equipo in enumerate(equipos_ordenados):
     name="Arial", size=10, bold=True, color=colores_equipos[fila][1])
   cell.fill = PatternFill(fill_type="solid", fgColor=colores_equipos[fila][0])
   cell.alignment = alignment
+  cell.border = border
 
 # 
 # SIGNIFICADO DE COLORES
